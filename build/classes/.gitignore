@@ -1,11 +1,13 @@
+/Database/
 /Drugs/
 /Fax/
-/FaxWS/
 /InsuranceResponse/
+/JSONParameters/
 /PBM/
 /Parameters/
+/Pharmacy/
 /PivotTable/
-/TelmedResponse/
+/ResponseBuilder/
 /WorkFlow/
 /client/
 /doctor/

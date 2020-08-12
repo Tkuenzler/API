@@ -14,6 +14,9 @@ import javax.swing.JOptionPane;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import Pharmacy.PharmacyMap;
+import Pharmacy.RoadMap;
+
 public class RoadMapClient {
 	String table,database;
 	public Connection connect = null;
@@ -264,37 +267,60 @@ public class RoadMapClient {
 			}
 		}
 	}
-	public String[] getPharmacies() {
-		String sql = "SHOW TABLES";
+	public PharmacyMap getPharmacy(String pharmacy) {
+		String sql = "SELECT * FROM `"+table+"` WHERE `PHARMACY` = '"+pharmacy+"'";
 		Statement stmt = null;
-		ResultSet pharmacies = null;
+		ResultSet set = null;
 		try {
 			stmt = connect.createStatement();
-			pharmacies = stmt.executeQuery(sql);
-			List<String> list = new ArrayList<String>();
-			list.add("No Home");
-			list.add("Medicaid");
-			list.add("Not Found");
-			while(pharmacies.next()) {
-				String pharmacy = pharmacies.getString("Tables_in_Road_Map");
-				switch(pharmacy) {
-					case "BLANK_MAP":
-					case "TELMED_ROADMAP":
-					case "CLN_ROADMAP":
-					case "SKYLINE_ROADMAP":
-						continue;
-					default:
-						list.add(pharmacy);
-				}
+			set = stmt.executeQuery(sql);
+			if(set.next()) 
+				return new PharmacyMap(set);
+			else
+				return null;
+		} catch(SQLException ex) {
+			ex.printStackTrace();
+			return null;
+		} finally {
+			try {
+				if(set!=null) set.close();
+				if(stmt!=null)stmt.close();
+			} catch(SQLException ex) {
 				
+			} 
+		}
+	}
+	public void LoadAllStates(PharmacyMap map) {
+		String sql = "SELECT * FROM `"+map.getPharmacyName()+"`";
+		Statement stmt = null;
+		ResultSet set = null;
+		try {
+			stmt = connect.createStatement();
+			set = stmt.executeQuery(sql);
+			while(set.next()) {
+				map.addState(new RoadMap(map.getPharmacyName(),set));
 			}
+		} catch(SQLException ex) {
+			ex.printStackTrace();
+		}
+	}
+	public String[] getPharmacies() {
+		String sql = "SELECT * FROM `"+table+"` WHERE `FAX_CHASE` = 1";
+		Statement stmt = null;
+		ResultSet set = null;
+		try {
+			stmt = connect.createStatement();
+			set = stmt.executeQuery(sql);
+			List<String> list = new ArrayList<String>();
+			while(set.next())
+				list.add(set.getString("PHARMACY"));
 			return list.toArray(new String[list.size()]);
 		}catch(SQLException e) {
 			e.printStackTrace();
 			return null;
 		} finally {
 			try {
-				if(pharmacies!=null) pharmacies.close();
+				if(set!=null) set.close();
 				if(stmt!=null) stmt.close();
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
@@ -302,10 +328,6 @@ public class RoadMapClient {
 			}
 		}
 	}
-	
-	
-	
-	
 	public String CanTelmedGetPharmacy(Record record,String type) {
 		switch(type) {
 			case "Medicare":

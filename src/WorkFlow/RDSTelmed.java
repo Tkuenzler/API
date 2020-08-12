@@ -32,7 +32,7 @@ import org.json.JSONObject;
 
 import Fax.Group;
 import PBM.InsuranceFilter;
-import TelmedResponse.TelmedResponse;
+import ResponseBuilder.TelmedResponse;
 import client.BlueMosiacClient;
 import client.DMEClient;
 import client.DatabaseClient;
@@ -647,7 +647,7 @@ public class RDSTelmed {
 					return TelmedResponse.BuildSuccessfulResponse(record.getFirstName(), record.getLastName(), id);
 				}
 				else {
-					return TelmedResponse.BuildFailedResponse("Error Code: "+add, "", record.getFirstName(), record.getLastName(), "", record.getAgent());
+					return TelmedResponse.BuildFailedResponse("Error Code: "+add, record.getFirstName(), record.getLastName());
 				}
 			}
 			else {

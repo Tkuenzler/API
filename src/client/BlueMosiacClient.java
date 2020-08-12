@@ -15,7 +15,7 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import TelmedResponse.TelmedResponse;
+import ResponseBuilder.TelmedResponse;
 
 public class BlueMosiacClient {
 	public static final String URL = "https://www.bluemosaichealth.com/insert-patient/CVIntake";

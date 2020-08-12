@@ -23,7 +23,7 @@ import Fax.MessageStatus;
 import Fax.TelmedStatus;
 import PBM.InsuranceFilter;
 import PBM.InsuranceType;
-import TelmedResponse.TelmedResponse;
+import ResponseBuilder.TelmedResponse;
 
 public class DatabaseClient {
 	String table;
@@ -59,26 +59,6 @@ public class DatabaseClient {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} 
-	}
-	
-	public boolean isDuplicate(String phone) {
-		String sql = "SELECT * FROM `Leads` WHERE `"+Columns.PHONE_NUMBER+"` = '"+phone+"'";
-		Statement stmt = null;
-		ResultSet set = null;
-		try {
-			stmt = connect.createStatement();
-			set = stmt.executeQuery(sql);
-			return set.next();
-		} catch(SQLException ex) {
-			return false;
-		} finally {
-			try {
-				if(stmt!=null) stmt.close();
-				if(set!=null)set.close();
-			} catch(SQLException ex) {
-				
-			}
-		}
 	}
 	public int updateRecord(Record record,String table,String afid,String pharmacy,String agent,String callCenter) {
 		try {
@@ -255,6 +235,28 @@ public class DatabaseClient {
 			}
 		} 
 	}
+	public String getColumn(String phone,String column,String table) {
+		String sql = "SELECT * FROM `"+table+"` WHERE `"+Columns.PHONE_NUMBER+"` = '"+phone+"'";
+		Statement stmt = null;
+		ResultSet set = null;
+		try {
+			stmt = connect.createStatement();
+			set = stmt.executeQuery(sql);
+			if(set.next()) 
+				return set.getString(column);
+			else
+				return "";
+		} catch(SQLException ex) {
+			return null;
+		} finally {
+			try {
+				if(set!=null) set.close();
+				if(stmt!=null) stmt.close();
+			} catch(SQLException ex) {
+				
+			}
+		}
+	}
 	private int AddToAlternateScript(Record record) {
 		String sql = "INSERT INTO `Alternate_Scripts` (`_id`) VALUES ('"+record.getId()+"')";
 		Statement stmt = null;
@@ -272,197 +274,6 @@ public class DatabaseClient {
 			}
 		}
 		
-	}
-	public String addRecordString(Record record,String table,String AFID,String pharmacy,String agent,String callCenter) {
-		PreparedStatement stmt = null;
-		try {
-			stmt = connect.prepareStatement(buildAddStatement(table));
-			for(int i = 0;i<Columns.HEADERS.length;i++) {
-				String column = Columns.HEADERS[i];
-				switch(column) {
-				case Columns.FIRST_NAME:
-					stmt.setString(i, record.getFirstName());
-					break;
-				case Columns.LAST_NAME:
-					stmt.setString(i, record.getLastName());
-					break;
-				case Columns.DOB:
-					stmt.setString(i, record.getDob());
-					break;
-				case Columns.AGE:
-					stmt.setString(i, ""+record.getAge());
-					break;
-				case Columns.PHONE_NUMBER:
-					stmt.setString(i, record.getPhone());
-					break;
-				case Columns.ADDRESS:
-					stmt.setString(i, record.getAddress());
-					break;
-				case Columns.CITY:
-					stmt.setString(i, record.getCity());
-					break;
-				case Columns.STATE:
-					stmt.setString(i, record.getState());
-					break;
-				case Columns.ZIP:
-					stmt.setString(i, record.getZip());
-					break;
-				case Columns.EMDEON_STATUS:
-					stmt.setString(i, record.getStatus());
-					break;
-				case Columns.TYPE:
-					stmt.setString(i, record.getType());
-					break;
-				case Columns.LAST_EMDEON_DATE:
-					stmt.setString(i, getCurrentDate("yyyy-MM-dd"));
-					break;
-				case Columns.CARRIER:
-					stmt.setString(i, record.getCarrier());
-					break;
-				case Columns.INSURANCE_NAME:
-					stmt.setString(i, record.getInsuranceName());
-					break;
-				case Columns.POLICY_ID:
-					stmt.setString(i, record.getPolicyId());
-					break;
-				case Columns.BIN:
-					stmt.setString(i, record.getBin());
-					break;
-				case Columns.GROUP:
-					stmt.setString(i, record.getGrp());
-					break;
-				case Columns.PCN:
-					stmt.setString(i, record.getPcn());
-					break;
-				case Columns.CONTRACT_ID:
-					stmt.setString(i, record.getContractId());
-					break;
-				case Columns.BENEFIT_ID:
-					stmt.setString(i, record.getBenefitId());
-					break;
-				case Columns.NPI:
-					stmt.setString(i, record.getNpi());
-					break;
-				case Columns.DR_TYPE:
-					stmt.setString(i, record.getDrType());
-					break;
-				case Columns.NOTES:
-					stmt.setString(i, "");
-					break;
-				case Columns.DR_FIRST:
-					stmt.setString(i, record.getDrFirst());
-					break;
-				case Columns.DR_LAST:
-					stmt.setString(i, record.getDrLast());
-					break;
-				case Columns.DR_ADDRESS1:
-					stmt.setString(i, record.getDrAddress());
-					break;
-				case Columns.DR_CITY:
-					stmt.setString(i, record.getDrCity());
-					break;
-				case Columns.DR_STATE:
-					stmt.setString(i, record.getDrState());
-					break;
-				case Columns.DR_ZIP:
-					stmt.setString(i, record.getDrZip());
-					break;
-				case Columns.DR_PHONE:
-					stmt.setString(i, record.getDrPhone());
-					break;
-				case Columns.DR_FAX:
-					stmt.setString(i, record.getDrFax());
-					break;
-				case Columns.SSN:
-					stmt.setString(i, record.getSsn());
-					break;
-				case Columns.ID:
-					stmt.setString(i, record.getFirstName()+record.getLastName()+record.getPhone());
-					break;
-				case Columns.GENDER:
-					stmt.setString(i, record.getGender());
-					break;		
-				case Columns.PAIN_LOCATION:
-					stmt.setString(i, record.getPainLocation());
-					break;
-				case Columns.PAIN_CAUSE:
-					stmt.setString(i, record.getPainCause());
-					break;
-				case Columns.FAX_DISPOSITION:
-					stmt.setString(i, "");
-					break;
-				case Columns.MESSAGE_STATUS:
-					stmt.setString(i,"");
-					break;
-				case Columns.AFID:
-					stmt.setString(i, AFID);
-					break;
-				case Columns.AGENT:
-					stmt.setString(i, agent);
-					break;
-				case Columns.PHARMACY:
-					stmt.setString(i, pharmacy);
-					break;
-				case Columns.CALL_CENTER:
-					stmt.setString(i, callCenter);
-					break;
-				case Columns.DATE_ADDED:
-					stmt.setString(i, getCurrentDate("yyyy-MM-dd"));
-					break;
-				//BLANKS
-				case Columns.TELMED_DISPOSITION:
-					stmt.setString(i, "");
-					break;
-				case Columns.MESSAGE_ID:
-					stmt.setString(i, "");
-					break;
-				case Columns.SOURCE:
-					stmt.setString(i, record.getSource());
-					break;
-				}				
-			} 			
-			return ""+stmt.executeUpdate();
-		} catch(SQLException ex) {
-			return ex.getMessage();
-		} finally {
-			try {
-				if(stmt!=null) stmt.close();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		} 
-	}
-	public String GetDuplicateInfo(Record record,String table) {
-		String sql = "SELECT * FROM `"+table+"` WHERE `"+Columns.ID+"` = '"+record.getId()+"'";
-		Statement stmt = null;
-		ResultSet set = null;
-		try {
-			stmt = connect.createStatement();
-			set = stmt.executeQuery(sql);
-			if(set.next()) {
-				StringBuilder builder = new StringBuilder();
-				builder.append("DUPLICATE ENTRY </br>");
-				builder.append("Patient Name: "+set.getString(Columns.FIRST_NAME)+" "+set.getString(Columns.LAST_NAME)+"</br>");
-				builder.append("Submitted By: "+set.getString(Columns.AGENT)+"</br>");
-				builder.append("Date Added: "+set.getString(Columns.DATE_ADDED)+"</br>");
-				return builder.toString();
-			}
-			else 
-				return "ERROR NOT DUPLICATE";
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return e.getMessage();
-		} finally {
-			try {
-				if(set!=null) set.close();
-				if(stmt!=null) stmt.close();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
 	}
 	public boolean isSameDoctor(Record record,String table) {
 		String sql = "SELECT * FROM `"+table+"` WHERE `"+Columns.PHONE_NUMBER+"` = '"+record.getPhone()+"' AND `"+Columns.NPI+"` = '"+record.getNpi()+"'";
@@ -485,24 +296,6 @@ public class DatabaseClient {
 				e.printStackTrace();
 			}
 		} 
-	}
-	public int addRecording(String phone,String url) {
-		String sql = "INSERT INTO `Recordings` (`PHONE`,`URL`) VALUES ('"+phone+"','"+url+"')";
-		Statement stmt = null;
-		try {
-			stmt = connect.createStatement();
-			return stmt.executeUpdate(sql);
-		} catch(SQLException ex) {
-			ex.printStackTrace();
-			return -2;
-		} finally {
-			try {
-				if(stmt!=null) stmt.close();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
 	}
 	public String buildAddStatement(String table) {
 		StringBuilder base = new StringBuilder("INSERT into `"+table+"` (");
@@ -1417,7 +1210,7 @@ public class DatabaseClient {
 				else 
 					return TelmedResponse.BuildFailedResponse(value);
 			} catch(SQLException ex) {
-				return TelmedResponse.BuildFailedResponse(ex.getMessage());
+				return TelmedResponse.BuildFailedResponse(ex.getMessage(),ex.getErrorCode());
 			} catch (JSONException ex) {
 				// TODO Auto-generated catch block
 				return TelmedResponse.BuildFailedResponse(ex.getMessage());
@@ -1603,15 +1396,12 @@ public class DatabaseClient {
 			if(set.next()) {
 				String first = set.getString("first_name");
 				String last = set.getString("last_name");
-				String id = set.getString("");
-				String agent = set.getString("agent");
-				String date = set.getString("DATE_ADDED");
-				return TelmedResponse.BuildFailedResponse(TelmedResponse.Errors.DUPLICATE,date,first,last,id,agent);
+				return TelmedResponse.BuildFailedResponse(TelmedResponse.Errors.DUPLICATE,first,last);
 			}
 			else 
 				return null;
 		} catch(SQLException ex) {
-			return TelmedResponse.BuildFailedResponse(ex.getMessage(),"","","","","");
+			return TelmedResponse.BuildFailedResponse(ex.getMessage(),"","");
 		} finally {
 			try {
 				if(set!=null) set.close();
@@ -1622,262 +1412,10 @@ public class DatabaseClient {
 			}
 		}
 	}
-	public boolean IsInDatabase(String phone) {
-		String sql = "SELECT * FROM `Leads` WHERE `"+Columns.PHONE_NUMBER+"` = '"+phone+"'";
-		Statement stmt = null;
-		ResultSet set = null;
-		try {
-			stmt = connect.createStatement();
-			set = stmt.executeQuery(sql);
-			if(set.next())
-				return true;
-			else
-				return false;
-	
-		} catch(SQLException ex) {
-			System.out.println(ex.getMessage());
-			return false;
-		} finally {
-			try {
-				if(set!=null) set.close();
-				if(stmt!=null) stmt.close();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
-	
 	private String getCurrentDate(String format) {
 		SimpleDateFormat formatter = new SimpleDateFormat(format); 
 		Date date = new Date(); 
 		return formatter.format(date);
-	}
-
-	public String GetTodaysLeads(String date) {
-		String sql = "SELECT * FROM `TELMED` WHERE `DATE_ADDED` = '"+date+"'";
-		Statement stmt = null;
-		ResultSet set = null;
-		try {
-			stmt = connect.createStatement();
-			set = stmt.executeQuery(sql);
-			set = stmt.executeQuery(sql);
-			int verified = 0,unknown = 0 ,medicare = 0;
-			while(set.next()) {
-				Record record = new Record();
-				record.setBin(set.getString("BIN"));
-				record.setGrp(set.getString("GRP"));
-				record.setPcn(set.getString("PCN"));
-				String type = InsuranceFilter.Filter(record);
-				switch(type) {
-					case InsuranceType.PRIVATE_VERIFIED:
-						verified++;
-						break;
-					case InsuranceType.PRIVATE_UNKNOWN:
-						unknown++;
-						break;
-					case InsuranceType.MEDICARE_TELMED:
-						medicare++;
-						break;
-				}
-			}
-			StringBuilder builder = new StringBuilder();
-			builder.append("VERIFIED LEADS: "+verified);
-			builder.append("\r\n");
-			builder.append("UNKNOWN LEADS: "+unknown);
-			builder.append("\r\n");
-			builder.append("MEDICARE LEADS: "+medicare);
-		return builder.toString();
-		} catch(SQLException ex ) {
-			return null;
-		} finally {
-			try {
-				if(set!=null) set.close();
-				if(stmt!=null) stmt.close();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
-	public String GetPayableLeadsDate(String date) {
-		String sql = "SELECT * FROM `TELMED` WHERE `DATE_ADDED` = '"+date+"' AND  "+TelmedStatus.GetSuccesfulQuery();
-		Statement stmt = null;
-		ResultSet set = null;
-		try {
-			stmt = connect.createStatement();
-			set = stmt.executeQuery(sql);
-			StringBuilder builder = new StringBuilder();
-			int count = 1;
-			while(set.next()) {
-				String name = set.getString("first_name")+" "+set.getString("last_name");
-				String phone = set.getString("phonenumber");
-				String status = set.getString("TELMED_STATUS");
-				builder.append(count+") "+name+" "+phone+" "+status);
-				builder.append("\r\n");
-				count++;
-			}
-			return builder.toString();
-		} catch(SQLException ex) {
-			System.out.println(ex.getMessage());
-			return null;
-		} finally {
-			try {
-				if(set!=null) set.close();
-				if(stmt!=null) stmt.close();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
-	public String GetNonPayableLeadsDate(String date) {
-		String sql = "SELECT * FROM `TELMED` WHERE `DATE_ADDED` = '"+date+"' AND  "+TelmedStatus.GetSuccesfulQuery();
-		Statement stmt = null;
-		ResultSet set = null;
-		try {
-			stmt = connect.createStatement();
-			set = stmt.executeQuery(sql);
-			StringBuilder builder = new StringBuilder();
-			int count = 1;
-			while(set.next()) {
-				String name = set.getString("first_name")+" "+set.getString("last_name");
-				String phone = set.getString("phonenumber");
-				String status = set.getString("TELMED_STATUS");
-				builder.append(count+") "+name+" "+phone+" "+status);
-				builder.append("\r\n");
-				count++;
-			}
-			return builder.toString();
-		} catch(SQLException ex) {
-			System.out.println(ex.getMessage());
-			return null;
-		} finally {
-			try {
-				if(set!=null) set.close();
-				if(stmt!=null) stmt.close();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
-	public String GetPayableLeadsRange(String start,String end,String agent) {
-		String sql = null;
-		if(agent==null)
-			sql = "SELECT * FROM `TELMED` WHERE (`DATE_ADDED` >= '"+start+"' AND `DATE_ADDED` <= '"+end+"') AND  "+TelmedStatus.GetSuccesfulQuery();
-		else
-			sql = "SELECT * FROM `TELMED` WHERE `agent` = '"+agent+"' AND (`DATE_ADDED` >= '"+start+"' AND `DATE_ADDED` <= '"+end+"') AND  "+TelmedStatus.GetSuccesfulQuery();
-		Statement stmt = null;
-		ResultSet set = null;
-		try {
-			stmt = connect.createStatement();
-			set = stmt.executeQuery(sql);
-			StringBuilder builder = new StringBuilder();
-			int count = 1;
-			while(set.next()) {
-				String name = set.getString("first_name")+" "+set.getString("last_name");
-				String phone = set.getString("phonenumber");
-				String status = set.getString("TELMED_STATUS");
-				builder.append(count+") "+name+" "+phone+" "+status);
-				builder.append("\r\n");
-				count++;
-			}
-			return builder.toString();
-		} catch(SQLException ex) {
-			System.out.println(ex.getMessage());
-			return null;
-		} finally {
-			try {
-				if(set!=null) set.close();
-				if(stmt!=null) stmt.close();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
-	public String GetNonPayableLeadsRange(String start,String end,String agent) {
-		String sql = null;
-		if(agent==null)
-			sql = "SELECT * FROM `TELMED` WHERE (`DATE_ADDED` >= '"+start+"' AND `DATE_ADDED` <= '"+end+"') AND  "+TelmedStatus.GetSuccesfulQuery();
-		else
-			sql = "SELECT * FROM `TELMED` WHERE `agent` = '"+agent+"' AND (`DATE_ADDED` >= '"+start+"' AND `DATE_ADDED` <= '"+end+"') AND  "+TelmedStatus.GetSuccesfulQuery();
-		Statement stmt = null;
-		ResultSet set = null;
-		try {
-			stmt = connect.createStatement();
-			set = stmt.executeQuery(sql);
-			StringBuilder builder = new StringBuilder();
-			int count = 1;
-			while(set.next()) {
-				String name = set.getString("first_name")+" "+set.getString("last_name");
-				String phone = set.getString("phonenumber");
-				String status = set.getString("TELMED_STATUS");
-				builder.append(count+") "+name+" "+phone+" "+status);
-				builder.append("\r\n");
-				count++;
-			}
-			return builder.toString();
-		} catch(SQLException ex) {
-			System.out.println(ex.getMessage());
-			return null;
-		} finally {
-			try {
-				if(set!=null) set.close();
-				if(stmt!=null) stmt.close();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
-	public Record LoadFailedTelmed() {
-		String NOT_UPDATED_TRIED_IN_2_HOURS = "(`LAST_UPDATED` < DATE_ADD(CURDATE(), INTERVAL -2 HOUR))";
-		String sql = "SELECT * FROM `TELMED` WHERE `USED` = 0 AND (`CALL_DISPOSITION` <> 'NOT INTERESTED' AND `CALL_DISPOSITION` <> 'TRANSFERRED') AND "+TelmedStatus.GetSuccesfulQuery()+" ORDER BY `LAST_UPDATED` ASC";
-		Statement stmt = null;
-		ResultSet set = null;
-		Record record = null;
-		try {
-			stmt = connect.createStatement();
-			set = stmt.executeQuery(sql);	
-			if(set.next()) {
-				record = new Record();
-				record.setFirstName(set.getString("first_name"));
-				record.setLastName(set.getString("last_name"));
-				record.setPhone(set.getString("phonenumber"));
-				SetTelmedUsed(record.getPhone(),1);
-				record.setTelmedId(set.getInt("TELMED_ID"));
-			}
-			return record;
-		} catch(SQLException ex) {
-			return record;
-		} finally {
-			try {
-				if(set!=null) set.close();
-				if(stmt!=null) stmt.close();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
-	public int SetTelmedUsed(String phone, int i) {
-		String sql = "UPDATE `TELMED` SET `USED` = "+i+" WHERE `phonenumber` = '"+phone+"'";
-		Statement stmt = null;
-		try {
-			stmt = connect.createStatement();
-			return stmt.executeUpdate(sql);
-		} catch(SQLException ex) {
-			return 0;
-		} finally {
-			try {
-				if(stmt!=null) stmt.close();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
 	}
 	public int UpdateTelemdID(Record record, String id) {
 		String sql = "UPDATE `TELMED` SET `TELMED_ID` = '"+id+"' WHERE `phonenumber` = '"+record.getPhone()+"'";
@@ -2426,29 +1964,6 @@ public class DatabaseClient {
 	
 	public boolean IsTelmedDuplicate(String phone) {
 		String sql = "SELECT * FROM `TELMED` WHERE `"+TelmedColumns.PHONE_NUMBER+"` = '"+phone+"'";
-		Statement stmt = null;
-		ResultSet set = null;
-		try {
-			stmt = connect.createStatement();
-			set = stmt.executeQuery(sql);
-			if(set.next())
-				return true;
-			else
-				return false;
-		} catch(SQLException ex) {
-			ex.printStackTrace();
-			return false;
-		} finally {
-			try {
-				if(stmt!=null) stmt.close();
-				if(set!=null) set.close();
-			} catch(SQLException ex) {
-				ex.printStackTrace();
-			}
-		}
-	}
-	public boolean IsTelmedDuplicate(Record record) {
-		String sql = "SELECT * FROM `TELMED` WHERE `"+TelmedColumns.PHONE_NUMBER+"` = '"+record.getPhone()+"' AND `"+TelmedColumns.DOB+"` = '"+record.getDob()+"'";
 		Statement stmt = null;
 		ResultSet set = null;
 		try {

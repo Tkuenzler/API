@@ -5,9 +5,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
-
 import org.apache.commons.logging.LogFactory;
-
 import com.gargoylesoftware.htmlunit.AjaxController;
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.CookieManager;
@@ -28,6 +26,8 @@ import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
 import com.gargoylesoftware.htmlunit.util.NameValuePair;
 
 import Fax.EmdeonStatus;
+import PBM.InsuranceType;
+import client.Record;
 
 public class EmdeonClient {
 	WebClient webClient = new WebClient(BrowserVersion.CHROME);
@@ -55,10 +55,10 @@ public class EmdeonClient {
 		LogFactory.getFactory().setAttribute("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.NoOpLog");
 	    java.util.logging.Logger.getLogger("com.gargoylesoftware.htmlunit").setLevel(Level.OFF); 
 	    java.util.logging.Logger.getLogger("org.apache.commons.httpclient").setLevel(Level.OFF);
-	    java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(Level.OFF); 
 	}
 	public boolean login(String username,String pass,String npi){
 		this.npi = npi;
+		System.out.println("Logging in");
 		HtmlPage page1;
 		try {
 			page1 = webClient.getPage(FieldNames.EMDEON_URL);
@@ -70,7 +70,9 @@ public class EmdeonClient {
 			HtmlSubmitInput button = form.getInputByName(ElementIds.LOGIN);
 			user.setValueAttribute(username);
 			password.setValueAttribute(pass);
+	
 			cardFinderPage = button.click();	
+			
 			cardFinderPage = webClient.getPage(FieldNames.CARDFINDER_URL);
 			HtmlForm form2 = cardFinderPage.getFormByName("aspnetForm");
 			HtmlTextInput coverageType = form2.getInputByName("ctl00$cphMain$pnlCallBack$ASPxRoundPanel1$ddServiceType");
@@ -107,10 +109,13 @@ public class EmdeonClient {
 	}
 
 	public void fillOutForm(Record record) {
-		if(!checkRecord(record)) 
-			record.setStatus("Invalid Record");
+		if(!checkRecord(record)) {
+			record.setStatus("Record Incomplete");
+			return;
+		}
 		else if(record.getFirstName().length()>=15 || record.getLastName().length()>=15) {
 			record.setStatus("Name too long");
+			return;
 		}
 		WebRequest request = cardFinderPage.getWebResponse().getWebRequest();
 		List<NameValuePair> oldParameters = request.getRequestParameters();
@@ -130,52 +135,52 @@ public class EmdeonClient {
 		};
 		for(NameValuePair name: oldParameters) {
 			switch(name.getName()) {
-				case EmdeonParameters.SERVICE_TYPE:
-					if(record.getSsn().length()==4)
-						newParameters.add(new NameValuePair(EmdeonParameters.SERVICE_TYPE,EmdeonParameters.COMMERCIAL_AND_MEDICARE));
-					else
-						newParameters.add(new NameValuePair(EmdeonParameters.SERVICE_TYPE,EmdeonParameters.COMMERCIAL));
-					break;
-				case EmdeonParameters.SERVICE_TYPE_VI:
-					if(record.getSsn().length()==4)
-						newParameters.add(new NameValuePair(EmdeonParameters.SERVICE_TYPE_VI,EmdeonParameters.COMMERCIAL_PART_D));
-					else
-						newParameters.add(new NameValuePair(EmdeonParameters.SERVICE_TYPE_VI,EmdeonParameters.COMMERCIAL_VALUE));
-					break;
-				case EmdeonParameters.SERVICE_TYPE_DL:
-					if(record.getSsn().length()==4)
-						newParameters.add(new NameValuePair(EmdeonParameters.SERVICE_TYPE_DL,EmdeonParameters.COMMERCIAL_PART_D));
-					else
-						newParameters.add(new NameValuePair(EmdeonParameters.SERVICE_TYPE_DL,EmdeonParameters.COMMERCIAL_VALUE));
-					break;
-				case EmdeonParameters.SSN:
-					if(record.getSsn().length()==4)
-						newParameters.add(new NameValuePair(EmdeonParameters.SSN,record.getSsn()));
-					break;
-				case EmdeonParameters.NPI:
-					newParameters.add(new NameValuePair(EmdeonParameters.NPI,npi));
-					break;
-				case EmdeonParameters.FIRST_NAME:
-					newParameters.add(new NameValuePair(EmdeonParameters.FIRST_NAME,record.getFirstName().trim()));
-					break;
-				case EmdeonParameters.LAST_NAME:
-					newParameters.add(new NameValuePair(EmdeonParameters.LAST_NAME,record.getLastName().trim()));
-					break;
-				case EmdeonParameters.DOB:
-					newParameters.add(new NameValuePair(EmdeonParameters.DOB,record.getDob()));
-					break;
-				case EmdeonParameters.DOB_STATE:
-					String dob_state = "{&quot;rawValue&quot;:&quot;"+record.getDob()+"&quot;,&quot;validationState&quot;:&quot;&quot;}";
-					newParameters.add(new NameValuePair(EmdeonParameters.DOB_STATE,dob_state));
-					break;
-				case EmdeonParameters.ZIP:
-					newParameters.add(new NameValuePair(EmdeonParameters.ZIP,record.getZip()));
-					break;
-				case EmdeonParameters.GENDER:
-					newParameters.add(new NameValuePair(EmdeonParameters.GENDER,Integer.toString(EmdeonParameters.getGenderValue(record))));
-					break;
-				default:
-					newParameters.add(name);
+			case EmdeonParameters.SERVICE_TYPE:
+				if(record.getSsn().length()==4)
+					newParameters.add(new NameValuePair(EmdeonParameters.SERVICE_TYPE,EmdeonParameters.COMMERCIAL_AND_MEDICARE));
+				else
+					newParameters.add(new NameValuePair(EmdeonParameters.SERVICE_TYPE,EmdeonParameters.COMMERCIAL));
+				break;
+			case EmdeonParameters.SERVICE_TYPE_VI:
+				if(record.getSsn().length()==4)
+					newParameters.add(new NameValuePair(EmdeonParameters.SERVICE_TYPE_VI,EmdeonParameters.COMMERCIAL_PART_D));
+				else
+					newParameters.add(new NameValuePair(EmdeonParameters.SERVICE_TYPE_VI,EmdeonParameters.COMMERCIAL_VALUE));
+				break;
+			case EmdeonParameters.SERVICE_TYPE_DL:
+				if(record.getSsn().length()==4)
+					newParameters.add(new NameValuePair(EmdeonParameters.SERVICE_TYPE_DL,EmdeonParameters.COMMERCIAL_PART_D));
+				else
+					newParameters.add(new NameValuePair(EmdeonParameters.SERVICE_TYPE_DL,EmdeonParameters.COMMERCIAL_VALUE));
+				break;
+			case EmdeonParameters.SSN:
+				if(record.getSsn().length()==4)
+					newParameters.add(new NameValuePair(EmdeonParameters.SSN,record.getSsn()));
+				break;
+			case EmdeonParameters.NPI:
+				newParameters.add(new NameValuePair(EmdeonParameters.NPI,npi));
+				break;
+			case EmdeonParameters.FIRST_NAME:
+				newParameters.add(new NameValuePair(EmdeonParameters.FIRST_NAME,record.getFirstName().trim()));
+				break;
+			case EmdeonParameters.LAST_NAME:
+				newParameters.add(new NameValuePair(EmdeonParameters.LAST_NAME,record.getLastName().trim()));
+				break;
+			case EmdeonParameters.DOB:
+				newParameters.add(new NameValuePair(EmdeonParameters.DOB,record.getDob()));
+				break;
+			case EmdeonParameters.DOB_STATE:
+				String dob_state = "{&quot;rawValue&quot;:&quot;"+record.getDob()+"&quot;,&quot;validationState&quot;:&quot;&quot;}";
+				newParameters.add(new NameValuePair(EmdeonParameters.DOB_STATE,dob_state));
+				break;
+			case EmdeonParameters.ZIP:
+				newParameters.add(new NameValuePair(EmdeonParameters.ZIP,record.getZip()));
+				break;
+			case EmdeonParameters.GENDER:
+				newParameters.add(new NameValuePair(EmdeonParameters.GENDER,Integer.toString(EmdeonParameters.getGenderValue(record))));
+				break;
+			default:
+				newParameters.add(name);
 			}
 		}
 		try {
@@ -192,6 +197,7 @@ public class EmdeonClient {
 				HtmlTable table = (HtmlTable) cardFinderPage.getElementById(ElementIds.COMMERCIAL_TABLE);
 				if(table==null) {
 					record.setStatus("Error");
+					return;
 				}
 				getPrivateCellData(table,record);
 				if(record.getSsn().length()==4) {
@@ -202,14 +208,15 @@ public class EmdeonClient {
 			}
 		} catch (FailingHttpStatusCodeException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			record.setStatus(e.getMessage());
+			return;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			record.setStatus(e.getMessage());
+			return;
 		} catch (ElementNotFoundException e) {
-			System.out.println(cardFinderPage.getWebResponse().getContentAsString());
-			e.printStackTrace();
-			record.setStatus("ERROR");
+			record.setStatus(e.getMessage());
+			return;
 		}
 	}
 	private boolean checkRecord(Record r) {
@@ -248,7 +255,7 @@ public class EmdeonClient {
 						record.setPolicyId(cell.getPreviousElementSibling().asText());
 					break;
 				case FieldNames.BIN:
-					if(cell.getIndex()==1) 
+					if(cell.getIndex()==1)
 						record.setBin(cell.getNextElementSibling().asText());
 					else 
 						record.setBin(cell.getPreviousElementSibling().asText());
@@ -332,100 +339,104 @@ public class EmdeonClient {
 				String cellData = cell.asText();
 				System.out.println(cellData);
 				switch(cellData) {
-					case FieldNames.PLAN_TYPE:
-						record.setStatus(EmdeonStatus.FOUND);
-						break;
-					case FieldNames.CONTRACT_NUMBER:
-						if(cell.getIndex()==1) 	
-							record.setContractId(cell.getNextElementSibling().asText());
-						else 
-							record.setContractId(cell.getPreviousElementSibling().asText());
-						break;
-					case FieldNames.BENEFIT_ID:
-						if(cell.getIndex()==1)
-							record.setBenefitId(cell.getNextElementSibling().asText());
-						else 
-							record.setBenefitId(cell.getPreviousElementSibling().asText());
-						break;
-					case FieldNames.PAYER_HELP_DESK:
-						break;
-					case FieldNames.POLICY_ID:
-						if(cell.getIndex()==1)
-							record.setPolicyId(cell.getNextElementSibling().asText());
-						else 
-							record.setPolicyId(cell.getPreviousElementSibling().asText());
-						break;
-					case FieldNames.BIN:
-						if(cell.getIndex()==1)
-							record.setBin(cell.getNextElementSibling().asText());
-						else 
-							record.setBin(cell.getPreviousElementSibling().asText());
-						record.setCarrier(getPBMFromBin(record.getBin()));
-						break;
-					case FieldNames.GROUP:
-						if(cell.getIndex()==1)
-							record.setGrp(cell.getNextElementSibling().asText());
-						else 
-							record.setGrp(cell.getPreviousElementSibling().asText());
-						break;
-					case FieldNames.PCN:
-						if(cell.getIndex()==1)
-							record.setPcn(cell.getNextElementSibling().asText());
-						else 
-							record.setPcn(cell.getPreviousElementSibling().asText());
-						break;
-					case FieldNames.ADDITIONAL_COVERAGE:
-						if(cell.getIndex()==1)
-							record.setAdditionalInfo(cell.getNextElementSibling().asText());
-						else 
-							record.setAdditionalInfo(cell.getPreviousElementSibling().asText());
-						return;
-					case ErrorNames.NO_DATA:
-						record.setStatus(ErrorNames.NO_DATA);
-						break;
-					case ErrorNames.PATIENT_NOT_COVERED: 
-						record.setStatus(EmdeonStatus.NOT_COVERED);
-						break;
-					case ErrorNames.LAST_NAME_TOO_LONG: 
-						record.setStatus(EmdeonStatus.LAST_NAME_TOO_LONG);
-						break;
-					case ErrorNames.FIRST_NAME_TOO_LONG:
-						record.setStatus(EmdeonStatus.FIRST_NAME_TOO_LONG);
-						break;
-					case ErrorNames.INVALID_DOB: 
-						record.setStatus(EmdeonStatus.INVALID_DOB);
-						break;
-					case ErrorNames.PATIENT_MEDICARE_NOT_FOUND:
-						//Do nothing.. already set from Private look up
-						break;
-					case ErrorNames.PBM_NOT_PARTICIPATE: 
-						if(!record.getStatus().equalsIgnoreCase(EmdeonStatus.FOUND))
-							record.setStatus(EmdeonStatus.PBM_NOT_PARTICIPATE);
-						break;
-					case ErrorNames.PBM_NOT_PARTICIPATE2:
-						if(!record.getStatus().equalsIgnoreCase(EmdeonStatus.FOUND))
-							record.setStatus(EmdeonStatus.PBM_NOT_PARTICIPATE);
-						break;
-					case ErrorNames.NOT_ACTIVE: 
-						if(!record.getStatus().equalsIgnoreCase(EmdeonStatus.FOUND))
-							record.setStatus(EmdeonStatus.NOT_ACTIVE);
-						break;
-					case ErrorNames.TIMED_OUT:
-						if(!record.getStatus().equalsIgnoreCase(EmdeonStatus.FOUND))
-							record.setStatus(EmdeonStatus.TIMED_OUT);
-						break;
-					case ErrorNames.MED_D_NOT_VALID:
-						if(!record.getStatus().equalsIgnoreCase(EmdeonStatus.FOUND))
-							record.setStatus(EmdeonStatus.PART_D_NOT_ACTIVE);
-						break;
-					case ErrorNames.CONNECTION_ISSUES:
-						if(!record.getStatus().equalsIgnoreCase(EmdeonStatus.FOUND))
-							record.setStatus(EmdeonStatus.CONNECTION_ISSUES);
-						break;
-					case ErrorNames.CONNECTION_ISSUES2:
-						if(!record.getStatus().equalsIgnoreCase(EmdeonStatus.FOUND))
-							record.setStatus(EmdeonStatus.CONNECTION_ISSUES);
-						break;				
+				case FieldNames.PLAN_TYPE:
+					record.setStatus(EmdeonStatus.FOUND);
+					break;
+				case FieldNames.CONTRACT_NUMBER:
+					if(cell.getIndex()==1) {
+						record.setType(getPlanType(cell.getNextElementSibling().asText()));
+						record.setContractId(cell.getNextElementSibling().asText());
+					}
+					else {
+						record.setContractId(cell.getNextElementSibling().asText());
+						record.setType(getPlanType(cell.getNextElementSibling().asText()));
+					}
+					break;
+				case FieldNames.BENEFIT_ID:
+					if(cell.getIndex()==1)
+						record.setBenefitId(cell.getNextElementSibling().asText());
+					else 
+						record.setBenefitId(cell.getPreviousElementSibling().asText());
+					break;
+				case FieldNames.PAYER_HELP_DESK:
+					break;
+				case FieldNames.POLICY_ID:
+					if(cell.getIndex()==1)
+						record.setPolicyId(cell.getNextElementSibling().asText());
+					else 
+						record.setPolicyId(cell.getPreviousElementSibling().asText());
+					break;
+				case FieldNames.BIN:
+					if(cell.getIndex()==1)
+						record.setBin(cell.getNextElementSibling().asText());
+					else 
+						record.setBin(cell.getPreviousElementSibling().asText());
+					record.setCarrier(getPBMFromBin(record.getBin()));
+					break;
+				case FieldNames.GROUP:
+					if(cell.getIndex()==1)
+						record.setGrp(cell.getNextElementSibling().asText());
+					else 
+						record.setGrp(cell.getPreviousElementSibling().asText());
+					break;
+				case FieldNames.PCN:
+					if(cell.getIndex()==1)
+						record.setPcn(cell.getNextElementSibling().asText());
+					else 
+						record.setPcn(cell.getPreviousElementSibling().asText());
+					break;
+				case FieldNames.ADDITIONAL_COVERAGE:
+					if(cell.getIndex()==1)
+						record.setAdditionalInfo(cell.getNextElementSibling().asText());
+					else 
+						record.setAdditionalInfo(cell.getPreviousElementSibling().asText());
+					return;
+				case ErrorNames.NO_DATA:
+				case ErrorNames.PATIENT_NOT_COVERED: 
+				case ErrorNames.LAST_NAME_TOO_LONG: 
+				case ErrorNames.FIRST_NAME_TOO_LONG:
+				case ErrorNames.INVALID_DOB: 
+				case ErrorNames.PATIENT_MEDICARE_NOT_FOUND:
+				case ErrorNames.PBM_NOT_PARTICIPATE: 
+				case ErrorNames.PBM_NOT_PARTICIPATE2:
+				case ErrorNames.CONNECTION_ISSUES:
+				case ErrorNames.CONNECTION_ISSUES2:
+				case ErrorNames.NOT_ACTIVE: 
+				case ErrorNames.TIMED_OUT:
+					if(!record.getStatus().equalsIgnoreCase("FOUND"))
+						record.setStatus(cellData);
+					break;
+				case ErrorNames.MED_D_NOT_VALID:
+					//Do nothing.. already set from Private look up
+					break;				
+				}
+			}
+		}
+	}
+	private String getPlanType(String type) {
+		if(type==null)
+			return "UNDEFINED";
+		if(type.length()==5) {
+			if(type.startsWith("R"))
+				return InsuranceType.MAPD_PPO;
+			if(type.startsWith("H"))
+				return InsuranceType.MAPD_HMO;
+			if(type.startsWith("S"))
+				return InsuranceType.PDP;
+		} 
+		return type;	
+	}
+	private void setMedicareNumber(HtmlTable table,InsuranceInfo info) {
+		for(HtmlTableRow row: table.getRows()) {
+			for(HtmlTableCell cell: row.getCells()) {
+				String cellData = cell.asText();
+				switch(cellData) {
+					case FieldNames.MEDICARE_NUMBER:
+					if(cell.getIndex()==1)	
+						info.medicarePrimary.setInfo(cell.getNextElementSibling().asText());
+					else
+						info.medicarePrimary.setInfo(cell.getPreviousElementSibling().asText());
+					break;
 				}
 			}
 		}
@@ -435,6 +446,7 @@ public class EmdeonClient {
 			case "004336": 
 			case "610239":
 			case "610591":
+			case "020107":
 				return "Caremark";
 			case "020115":
 			case "020099":
@@ -486,6 +498,9 @@ public class EmdeonClient {
 				return "Humana";
 			case "018117":
 				return "Magellan Rx ";
+			case "610602":
+				return "Navitus";
+			case "017043":
 			default:
 				return bin;
 		}
@@ -552,7 +567,6 @@ public class EmdeonClient {
 		public static final String CONTRACT_NUMBER = "Contract Number";
 		public static final String MEDICARE_NUMBER = "Medicare Beneficiary ID";
 		public static final String BENEFIT_ID = "Benefit ID";
-		
 		//URLS1
 		public static final String EMDEON_URL = "https://secure.erxnetwork.com/logon.aspx";
 		public static final String CARDFINDER_URL = "https://secure.erxnetwork.com/NS/Cardfinder/CardFinder.aspx";

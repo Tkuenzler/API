@@ -6,7 +6,7 @@ public class Nativitus {
 	public static String Filter(Record record) {
 		switch(record.getPcn()) {
 			case "MCAL":
-				return InsuranceType.MEDICAID;
+				return InsuranceType.PRIVATE_NO_TELMED;
 			case "NVTD":
 				return InsuranceType.MEDICARE_COMMERCIAL;
 			case "NVT":			

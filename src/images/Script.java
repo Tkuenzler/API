@@ -27,6 +27,9 @@ public class Script {
 	public static final String AETNA = "images/Aetna.pdf";
 	public static final String OPTUM_RX = "images/OptumRx.pdf";
 	public static final String INGENIO_RX = "images/IngenioRx.pdf";
+	public static final String MEDIMPACT = "images/Medimpact.pdf";
+	public static final String CIGNA = "images/Cigna.pdf";
+	public static final String ESI = "images/ESI.pdf";
 	
 	URL src;
 	PDDocument pdfDocument;

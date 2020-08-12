@@ -47,21 +47,18 @@ public class Fax {
 					return new Script(Fax.class.getClassLoader().getResource(Script.HUMANA));
 				case "610097":
 					return new Script(Fax.class.getClassLoader().getResource(Script.OPTUM_RX));
+				case "610014":
+				case "400023":
+					return new Script(Fax.class.getClassLoader().getResource(Script.ESI));
+				case "017010":
+					return new Script(Fax.class.getClassLoader().getResource(Script.CIGNA));
+				case "015574":
+					return new Script(Fax.class.getClassLoader().getResource(Script.MEDIMPACT));
+				default: return new Script(Fax.class.getClassLoader().getResource(Script.DR_CHASE_MAX));	
 			}
-			LoadData data = new LoadData();
-			data.GetData(LoadData.LAKE_IDA_LIST);
-			Drug[] drugs = data.GetDrugs(record);
-			if(drugs!=null) {
-				Script script = new Script(Fax.class.getClassLoader().getResource(Script.LIVE_SCRIPT));
-				script.setDrugs(drugs);
-				return script;
-			}
-			else
-				return new Script(Fax.class.getClassLoader().getResource(Script.DR_CHASE_MAX));
 		}
-		else {
+		else 
 			return new Script(Fax.class.getClassLoader().getResource(Script.DR_CHASE_MAX));
-		}
 	}
 	private static Drug[] SwapDrugs(Record record,Drug[] drugs) {
 		switch(record.getBin()) {

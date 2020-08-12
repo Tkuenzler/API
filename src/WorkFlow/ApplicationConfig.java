@@ -13,9 +13,7 @@ public class ApplicationConfig extends ResourceConfig {
 	    register(WorkFlow.Verify.class);
 	    register(WorkFlow.DoctorChase.class);
 	    register(WorkFlow.RDSTelmed.class);
-	    register(WorkFlow.InsuranceCheck.class);
 	    register(WorkFlow.Telmed.class);
-	    register(WorkFlow.DuplicateCheck.class);
 	    register(WorkFlow.AddRecord.class);
 	    register(WorkFlow.Report.class);
 	    register(WorkFlow.DME.class);
