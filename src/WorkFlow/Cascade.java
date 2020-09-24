@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
 
 import javax.servlet.http.HttpServletRequest;
@@ -20,9 +21,11 @@ import javax.ws.rs.core.MediaType;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import InsuranceResponse.InsuranceResponse;
 import PBM.InsuranceFilter;
 import PBM.InsuranceType;
+import Pharmacy.Pharmacy;
+import Pharmacy.PharmacyMap;
+import ResponseBuilder.InsuranceResponse;
 import client.DatabaseClient;
 import client.EmdeonClient;
 import client.InfoDatabase;
@@ -67,70 +70,48 @@ public class Cascade {
 		record.setAddress(address);
 		record.setCity(city);
 		record.setAgent(agent);
-		String valid = CheckLead(record);
-		if(valid!=null)
-			return valid;
 		InfoDatabase info = GetInfoDatabase();
+		JSONObject valid = CheckLead(record,info,roadmap,insurance_type);
+		if(valid!=null) {
+			info.close();
+			return valid.toString();
+		}
 		String callCenter = info.GetCallCenter(agent);
 		if(callCenter==null)
 			callCenter = "SOS";
-		if(info.CheckIfAudited(record.getPhone())) {
+		RoadMapClient client = new RoadMapClient(roadmap);
+		try {
+			ArrayList<PharmacyMap> map = client.getPharmaciesForTelmed(insurance_type);
+			//if(!Pharmacy.CanTelmed(map,record,insurance_type))
+				//return InsuranceResponse.BuildFailedResponse("CAN'T TAKE "+insurance_type+" IN "+record.getState()).toString();
+			getInsuranceInformation(info,record,callCenter,insurance_type);
+			String type = InsuranceFilter.Filter(record);
+			record.setType(type);
+			if(record.getStatus().equalsIgnoreCase("FOUND")) {
+				UpdateCheckedStatus(info,record,type);
+			}
+			else {
+				UpdateCheckedStatus(info,record,"");
+				return InsuranceResponse.BuildFailedResponse("Patient insurance "+record.getStatus()).toString();
+			}
 			info.close();
-			return InsuranceResponse.BuildFailedResponse("PATIENT HAS BEEN AUDITED PLEASE HANG UP").toString();
+			String pharmacy = Pharmacy.GetTelmedPharmacy(record,insurance_type,roadmap);
+			record.setPharmacy(pharmacy);
+			if(pharmacy==null)
+				return InsuranceResponse.BuildFailedResponse("Patient insurance "+record.getStatus()).toString();
+			return InsuranceResponse.BuildInsuranceResponse(record).toString();
+		} catch(Exception ex) {
+			return InsuranceResponse.BuildFailedResponse(ex.getLocalizedMessage()).toString();
+		} finally {
+			try {
+				if(info!=null) info.close();
+				if(client!=null)client.close();
+			} catch(Exception ex) {
+				
+			}
 		}
-		if(CheckDuplicate(record)) {
-			info.close();
-			return InsuranceResponse.BuildFailedResponse("Patient has already been submitted to Telmed").toString();
-		}
-		if(!CanTelmed(record,insurance_type,roadmap)) {
-			return InsuranceResponse.BuildFailedResponse("CANT TAKE "+insurance_type+" IN "+state).toString();
-		}
-		if(HasBeenLookedUp(info,record)) {
-			info.GetInsuranceInfo(record);
-		}
-		else {
-			incrementLookup(info,callCenter);
-			AddToCheck(info,record,callCenter,insurance_type);
-			EmdeonClient client = new EmdeonClient();
-			client.login("rxcg", "pharmacy123", "1619320132");
-			client.fillOutForm(record);
-			if(client!=null)
-				client.close();
-		}
-		String type = InsuranceFilter.Filter(record);
-		record.setType(type);
-		if(record.getStatus().equalsIgnoreCase("FOUND")) {
-			UpdateCheckedStatus(info,record,type);
-		}
-		else {
-			UpdateCheckedStatus(info,record,"");
-			return InsuranceResponse.BuildFailedResponse("Patient insurance "+record.getStatus()).toString();
-		}
-		
-		JSONObject dme = GetDMEEligibilty(info,record);
-		info.close();
-		String pharmacy = GetPharmacy(record,roadmap);
-		record.setPharmacy(pharmacy);
-		return InsuranceResponse.BuildInsuranceResponse(record, dme).toString();
 	}		
-	private String GetPharmacy(Record record,String roadmap) {
-		RoadMapClient map = GetRoadMap(roadmap);
-		String type = InsuranceFilter.Filter(record);
-		String pharmacy = null;
-		switch(type) {
-			case InsuranceType.MEDICARE_TELMED:
-				pharmacy = map.getMedicareTelmedPharmacy(record);
-				break;
-			case InsuranceType.PRIVATE_VERIFIED:
-			case InsuranceType.PRIVATE_UNKNOWN:
-				pharmacy = map.getPrivateTelmedPharmacy(record);
-				break;
-			default:
-				pharmacy = "";
-		}
-		map.close();
-		return pharmacy;
-	}
+	
 	@GET
 	@Path("GetInsurance")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -223,101 +204,59 @@ public class Cascade {
 			return null;
 		return map;
 	}
-	private JSONObject GetDMEEligibilty(InfoDatabase info,Record record) {
-		if(!record.getStatus().equalsIgnoreCase("Found"))
-			return DMEResponse(0,"INSURANCE NOT FOUND");
-		switch(record.getState()) {
-			case "AL":
-			case "AR":
-			case "CO":
-			case "CT":
-			case "LA":
-			case "MS":
-			case "NV":
-			case "NJ":
-			case "ND":
-			case "OK":
-			case "PA":
-			case "TX":
-				return DMEResponse(0,"NOT A VALID STATE FOR DME");
-		}
-		if(record.getBin().equalsIgnoreCase("015581") && !record.getPolicyId().startsWith("H"))
-			return DMEResponse(0,"PATIENT DOES NOT HAVE PPO");
-		switch(record.getBin()) {
-			case "015581":
-			case "610502":
-			case "610097":
-				if(record.getContractId().equalsIgnoreCase("")) {
-					return DMEResponse(1,"ELIGIBLE FOR BRACES IF PATIENT HAS PPO ONLY");
-				}
-				else {
-					if(info.hasContractId(record)) {
-						if(info.isPPO(record)) {
-							return DMEResponse(1,"PATIENT MAY BE ELIGIBLE FOR BRACES");
-						}
-						else {
-							return DMEResponse(0,"PATIENT DOES NOT HAVE PPO");
-						}
-					}
-				}
-			/*
-			case "610279":
-			case "610649":
-				return DMEResponse(0,"ELIGIBLE FOR BRACES IF PATIENT HAS PPO ONLY");
-			*/
-			default:
-				return DMEResponse(0,"NOT VALID INSURANCE CARRIER");
-			
-		}
-	}
-	private JSONObject DMEResponse(int success,String message) {
- 		JSONObject obj =  new JSONObject();
- 		try {
-	 		obj.put("Success", success);
-	 		obj.put("Message", message);
- 		} catch(JSONException ex) {
- 			ex.printStackTrace();
- 		}
- 		return obj;
- 	}
-	private boolean CanTelmed(Record record,String type,String roadmap) {
-		RoadMapClient map = GetRoadMap(roadmap);
-		boolean value = map.CanTelmed(record, type);
-		map.close();
-		return value;
-	}
 	private String convertDob(String dob) throws ParseException {
  		SimpleDateFormat correctFormat = new SimpleDateFormat("MM/dd/yyyy");
 		Date date = null;
  		date  = correctFormat.parse(dob);
 		return correctFormat.format(date);
  	}
- 	private String CheckLead(Record record) throws JSONException {
+ 	private JSONObject CheckLead(Record record,InfoDatabase info,String roadmap,String insurance_type) throws JSONException {
  		if(!checkState(record.getState()))
- 			return InsuranceResponse.BuildFailedResponse("There is no DR in "+record.getState()).toString();
+ 			return InsuranceResponse.BuildFailedResponse("There is no DR in "+record.getState());
  		if(!UnderAge(record.getDob(),75))
-			return InsuranceResponse.BuildFailedResponse("Must be under 75").toString();
+			return InsuranceResponse.BuildFailedResponse("Must be under 75");
  		if(record.getPhone().length()!=10)
-			return InsuranceResponse.BuildFailedResponse("Phone number must be 10 digits").toString();
+			return InsuranceResponse.BuildFailedResponse("Phone number must be 10 digits");
 		if(record.getZip().length()!=5)
-			return InsuranceResponse.BuildFailedResponse("Invalid Zipcode must be 5 numbers").toString();
+			return InsuranceResponse.BuildFailedResponse("Invalid Zipcode must be 5 numbers");
 		if(record.getDob().length()!=10)
-			return InsuranceResponse.BuildFailedResponse("Invalid DOB Formate must be MM/DD/YYYY").toString();
+			return InsuranceResponse.BuildFailedResponse("Invalid DOB Formate must be MM/DD/YYYY");
 		if(record.getFirstName().length()>13)
-			return InsuranceResponse.BuildFailedResponse("First name can only be 13 characters or less").toString();
+			return InsuranceResponse.BuildFailedResponse("First name can only be 13 characters or less");
 		if(record.getLastName().length()>13)
-			return InsuranceResponse.BuildFailedResponse("Last name can only be 13 characters or less").toString();
+			return InsuranceResponse.BuildFailedResponse("Last name can only be 13 characters or less");
+		if(info.CheckIfAudited(record.getPhone())) 
+			return InsuranceResponse.BuildFailedResponse("PATIENT HAS BEEN AUDITED PLEASE HANG UP");
+		if(CheckDuplicate(record)) 
+			return InsuranceResponse.BuildFailedResponse("Patient has already been submitted to Telmed");
 		else 
 			return null;
+ 	}
+ 	private void getInsuranceInformation(InfoDatabase info,Record record,String callCenter,String insurance_type) {
+ 		if(HasBeenLookedUp(info,record)) {
+			info.GetInsuranceInfo(record);
+		}
+		else {
+			incrementLookup(info,callCenter);
+			AddToCheck(info,record,callCenter,insurance_type);
+			EmdeonClient client = new EmdeonClient();
+			client.login("rxcg", "pharmacy123", "1619320132");
+			client.fillOutForm(record);
+			if(client!=null)
+				client.close();
+		}
  	}
  	private boolean checkState(String state) {
 		switch(state) {
 			case "AL":
 			case "AZ":
 			case "CA":
+			case "CO":
 			case "CT":
+			case "DC":
 			case "FL":
 			case "GA":
+			case "IA":
 			case "ID":
 			case "IL":
 			case "IN":
@@ -329,8 +268,8 @@ public class Cascade {
 			case "ME":
 			case "MI":
 			case "MN":
-			case "MT":
 			case "NC":
+			case "ND":
 			case "NE":
 			case "NH":
 			case "NJ":

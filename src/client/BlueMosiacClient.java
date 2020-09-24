@@ -15,6 +15,7 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import ResponseBuilder.BlueMosiacResponse;
 import ResponseBuilder.TelmedResponse;
 
 public class BlueMosiacClient {
@@ -36,22 +37,22 @@ public class BlueMosiacClient {
 				String responseString = EntityUtils.toString(entity, "UTF-8");
 				response.close();
 				client.close();
-				return TelmedResponse.BuildBlueMosiacResponse(responseString, data);
+				return BlueMosiacResponse.BuildResponse(new JSONObject(responseString));
 			}
 			else 
-				return TelmedResponse.BuildFailedResponse("HTTP ERROR CODE: "+status_code);
+				return BlueMosiacResponse.BuildFailedResponse("HTTP ERROR CODE: "+status_code);
 		} catch (URISyntaxException | MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return TelmedResponse.BuildFailedResponse(e.getMessage());
+			return BlueMosiacResponse.BuildFailedResponse(e.getMessage());
 		} catch (ClientProtocolException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return TelmedResponse.BuildFailedResponse(e.getMessage());
+			return BlueMosiacResponse.BuildFailedResponse(e.getMessage());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return TelmedResponse.BuildFailedResponse(e.getMessage());
+			return BlueMosiacResponse.BuildFailedResponse(e.getMessage());
 		}
 	}
 }

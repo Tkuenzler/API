@@ -1,13 +1,16 @@
 /Database/
+/Date/
+/DoctorChase/
 /Drugs/
 /Fax/
-/InsuranceResponse/
 /JSONParameters/
 /PBM/
 /Parameters/
 /Pharmacy/
 /PivotTable/
 /ResponseBuilder/
+/Script/
+/Telmed/
 /WorkFlow/
 /client/
 /doctor/

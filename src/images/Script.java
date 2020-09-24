@@ -9,14 +9,20 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
+import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDCheckBox;
 import org.apache.pdfbox.pdmodel.interactive.form.PDField;
 
 import Fax.Drug;
+import Fax.Fax;
+import PBM.InsuranceFilter;
+import PBM.InsuranceType;
 import client.Record;
+import images.Script.ScriptException;
 
 public class Script {
 	public static final String LIVE_SCRIPT = "images/Live Script.pdf";
@@ -24,38 +30,107 @@ public class Script {
 	public static final String DR_CHASE_MAX = "images/DR_CHASE - MAX.pdf";
 	public static final String HUMANA = "images/Humana.pdf";
 	public static final String CAREMARK = "images/Caremark.pdf";
+	public static final String SILVER_SCRIPTS = "images/Silverscripts.pdf";
+	public static final String RX_8120 = "images/RX8120.pdf";
+	public static final String RX_6270 = "images/RX6270.pdf";
 	public static final String AETNA = "images/Aetna.pdf";
 	public static final String OPTUM_RX = "images/OptumRx.pdf";
+	public static final String OPTUM_RX_SHCA = "images/OptumRx - SHCA.pdf";
+	public static final String OPTUM_RX_ALL_FAMILY = "images/Optum Rx - FL.pdf";
 	public static final String INGENIO_RX = "images/IngenioRx.pdf";
 	public static final String MEDIMPACT = "images/Medimpact.pdf";
 	public static final String CIGNA = "images/Cigna.pdf";
 	public static final String ESI = "images/ESI.pdf";
+	public static final String CUSTOM_SCRIPT = "images/Custom Script.pdf";
+	public static final String CUSTOM_SCRIPT_WITH_COVER = "images/Custom With Cover.pdf";
 	
 	URL src;
 	PDDocument pdfDocument;
 	Record record;
 	PDDocumentCatalog docCatalog = null;
 	PDAcroForm acroForm = null;
+	PDFMergerUtility pdfMerger;
+	File file = null;
 	Drug[] drugs;
+	Drug drug;
 	public Script(URL src) throws ScriptException, IOException, URISyntaxException {
 		this.src = src;
 		pdfDocument = PDDocument.load(new File(src.toURI()));
 		System.setProperty("sun.java2d.cmm", "sun.java2d.cmm.kcms.KcmsServiceProvider");
 		docCatalog = pdfDocument.getDocumentCatalog();
 		acroForm = docCatalog.getAcroForm();
+		
+	}
+	public Script(Drug drug) {
+		try {
+			pdfDocument = PDDocument.load(new File(Fax.class.getClassLoader().getResource(Script.CUSTOM_SCRIPT).toURI()));
+			docCatalog = pdfDocument.getDocumentCatalog();
+			acroForm = docCatalog.getAcroForm();
+			this.drug = drug;
+		} catch (IOException | URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	public void setDrugs(Drug[] drugs) {
 		this.drugs = drugs;
 	}
-	public File PopulateScript(Record record,String login) throws ScriptException {
-		try {
-			String number = null;
-			DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
-			Date date = new Date();
+	public File getFile() {
+		return this.file;
+	}
+ 	public void CreateAndPopulate(Record record,String number) {
+ 		try {
 			//COVER PAGE
 			List<PDField> fields = acroForm.getFields();
-			for(PDField field: fields) {
-				switch(field.getPartialName()) {
+			PopulateScript(fields,record,number);
+			file = File.createTempFile("FAX", ".pdf");
+			pdfDocument.save(file);
+			AddScripts(record,number);
+			if(record.getPharmacy().equalsIgnoreCase("All_Pharmacy")) {
+				AddScriptsAllFamilyPharmacy(record,number);
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}  catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (ScriptException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+ 	}
+ 	public void AddScripts(Record record,String number) throws InvalidPasswordException, IOException, ScriptException, URISyntaxException {
+ 		boolean fungal = false;
+		if(record.getProducts()!=null)
+		for(String product: record.getProducts()) {
+			switch(product.trim()) {
+				case "Migraines":
+					AddScript(record, number, Drug.GetMigraineScript(record), null);
+					break;
+				case "Anti-Fungal":
+					if(!fungal) {
+						AddScript(record, number, Drug.GetAntiFungal(record), null);
+						fungal = true;
+					}
+					break;
+				case "Podiatry":
+					if(!fungal) {
+						AddScript(record, number, Drug.GetFootSoak(record), Drug.GetAntiFungal(record));
+						fungal = true;
+					}
+					break;
+			}
+		}
+ 	}
+	public void PopulateScript(List<PDField> fields,Record record,String login) throws IOException {
+		String number = null;
+		DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
+		Date date = new Date();
+		for(PDField field: fields) {
+			switch(field.getPartialName()) {
 				case "TAG":
 					acroForm.getField("TAG").setValue(record.getTag());
 					break;
@@ -134,78 +209,151 @@ public class Script {
 					acroForm.getField("Doctor Address").setValue(record.getDrAddress().toUpperCase());
 					break;
 				case "Drug Therapy 1":
-					if(drugs[0]!=null)
-						acroForm.getField(field.getPartialName()).setValue(drugs[0].getTherapy()); 
+					acroForm.getField(field.getPartialName()).setValue(drug.getTherapy()); 
 					break;
 				case "Drug 1": 
-					if(drugs[0]!=null)
-						acroForm.getField(field.getPartialName()).setValue("Medication: "+drugs[0].getName()); 
+					acroForm.getField(field.getPartialName()).setValue("Medication: "+drug.getName()); 
 					break;
 				case "Drug Qty 1":
-					if(drugs[0]!=null)
-						acroForm.getField(field.getPartialName()).setValue("Dispense: "+drugs[0].getQty()); 
+					acroForm.getField(field.getPartialName()).setValue("Dispense: "+drug.getQty()); 
 					break;
 				case "Drug Sig 1":
-					System.out.println("DRUG SIG 1");
-					if(drugs[0]!=null)
-						acroForm.getField(field.getPartialName()).setValue("Sig:  "+drugs[0].getSig()); 
+					acroForm.getField(field.getPartialName()).setValue("Sig:  "+drug.getSig()); 
 					break;
-				case "Drug Therapy 2":
-					if(drugs[1]!=null)
-						acroForm.getField(field.getPartialName()).setValue(drugs[1].getTherapy()); 
+			}
+		}
+		PDCheckBox pain = (PDCheckBox) acroForm.getField("Pain");
+		PDCheckBox derm = (PDCheckBox) acroForm.getField("Dermatitis");
+		PDCheckBox vitamins = (PDCheckBox) acroForm.getField("Vitamins");
+		PDCheckBox acid = (PDCheckBox) acroForm.getField("Acid");
+		if(pain!=null)
+			pain.check();
+		if(derm!=null)
+			derm.check();
+		if(vitamins!=null)
+			vitamins.check();
+		if(acid!=null)
+			acid.check();
+	}
+	public void PopulateDrugs(List<PDField> fields,Drug drug1,Drug drug2) throws IOException {
+		for(PDField field: fields) {
+			switch(field.getPartialName()) {
+			case "Drug Therapy 1":
+				if(drug1!=null)
+					acroForm.getField("Drug Therapy 1").setValue(drug1.getTherapy()); 
+				break;
+			case "Drug 1":
+				if(drug1!=null)
+					acroForm.getField("Drug 1").setValue("Medication:  "+drug1.getName()); 
+				break;
+			case "Drug Qty 1": 
+				if(drug1!=null)
+					acroForm.getField("Drug Qty 1").setValue("Dispense:  "+drug1.getQty()); 
+				break;
+			case "Drug Sig 1":
+				if(drug1!=null)
+					acroForm.getField("Drug Sig 1").setValue("Sig:  "+drug1.getSig()); 
+				break;
+			case "Drug Therapy 2":
+				if(drug2!=null)
+					acroForm.getField("Drug Therapy 2").setValue(drug2.getTherapy()); 
+				break;
+			case "Drug 2":
+				if(drug2!=null)
+					acroForm.getField("Drug 2").setValue("Medication:  "+drug2.getName()); 
+				break;
+			case "Drug Qty 2": 
+				if(drug2!=null)
+					acroForm.getField("Drug Qty 2").setValue("Dispense:  "+drug2.getQty()); 
+				break;
+			case "Drug Sig 2":
+				if(drug2!=null)
+					acroForm.getField("Drug Sig 2").setValue("Sig:  "+drug2.getSig()); 
+				break;
+			}
+		}
+	}
+	public void AddScript(Record record,String login,Drug drug1,Drug drug2) throws InvalidPasswordException, IOException, ScriptException, URISyntaxException {
+		pdfMerger = new PDFMergerUtility();
+		pdfDocument = PDDocument.load(new File(Script.class.getClassLoader().getResource(Script.CUSTOM_SCRIPT).toURI()));
+		docCatalog = pdfDocument.getDocumentCatalog();
+		acroForm = docCatalog.getAcroForm();
+		try {
+			//COVER PAGE
+			List<PDField> fields = acroForm.getFields();
+			PopulateScript(fields,record,login);
+			PopulateScript(fields,record,login);
+			if(drug1!=null || drug2!=null)
+				PopulateDrugs(fields,drug1,drug2);
+	        File file2 = File.createTempFile("FAX2", ".pdf");
+	        pdfDocument.save(file2);
+	        pdfMerger.setDestinationFileName(file.getAbsolutePath());
+	        pdfMerger.addSource(file);
+	        pdfMerger.addSource(file2);
+	        pdfMerger.mergeDocuments(null);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			//JOptionPane.showMessageDialog(new JFrame(), e.getMessage());
+		}  catch (IllegalArgumentException e2) {
+			System.out.println(e2.getMessage());
+			e2.printStackTrace();
+			throw new ScriptException("Illegal Argument");
+		}  finally {
+			
+		}
+	}
+	public void AddScriptsAllFamilyPharmacy(Record record,String number) throws InvalidPasswordException, IOException, ScriptException, URISyntaxException {
+		int type = InsuranceFilter.GetInsuranceType(record);
+		switch(record.getBin()) {
+			case "015581":
+			case "015589":
+			{
+				AddScript(record,number,Drug.LidoPrilo240,null);
+				if(record.getCurrentAge()>=60)
+					AddScript(record,number,Drug.Methocarbamol750,null);
+				else
+					AddScript(record,number,Drug.Cyclobenzaprine5mg,null);
+				AddScript(record,number,Drug.OmegaEthylEster, null);
+				break;
+			}
+			case "610014":
+			case "003858":
+			{
+				if(type==InsuranceType.Type.PRIVATE_INSURANCE) {
+					AddScript(record,number,Drug.Ketoprofen240,null);
+					AddScript(record,number,Drug.Chlorzoxazone250,null);
+					AddScript(record,number,Drug.Lidocaine250,null);
 					break;
-				case "Drug 2": 
-					if(drugs[1]!=null)
-						acroForm.getField(field.getPartialName()).setValue("Medication: "+drugs[1].getName()); 
-					break;
-				case "Drug Qty 2":
-					if(drugs[1]!=null)
-						acroForm.getField(field.getPartialName()).setValue("Dispense: "+drugs[1].getQty()); 
-					break;
-				case "Drug Sig 2":
-					System.out.println("DRUG SIG 2");
-					if(drugs[1]!=null)
-						acroForm.getField(field.getPartialName()).setValue("Sig: "+drugs[1].getSig()); 
-					break;
-				case "Drug Therapy 3":
-					if(drugs[2]!=null)
-						acroForm.getField(field.getPartialName()).setValue(drugs[2].getTherapy()); 
-					break;
-				case "Drug 3": 
-					System.out.println("DRUG 3");
-					if(drugs[2]!=null)
-						acroForm.getField(field.getPartialName()).setValue("Medication: "+drugs[2].getName()); 
-					break;
-				case "Drug Qty 3":
-					if(drugs[2]!=null)
-						acroForm.getField(field.getPartialName()).setValue("Dispense: "+drugs[2].getQty()); 
-					break;
-				case "Drug Sig 3":
-					if(drugs[2]!=null)
-						acroForm.getField(field.getPartialName()).setValue("Sig:  "+drugs[2].getSig()); 
+				} 
+				else {
+					AddScript(record,number,Drug.Ketoprofen180,null);
+					AddScript(record,number,Drug.Chlorzoxazone250,null);
+					AddScript(record,number,Drug.Lidocaine250,null);
 					break;
 				}
 			}
-			PDCheckBox pain = (PDCheckBox) acroForm.getField("Pain");
-			PDCheckBox derm = (PDCheckBox) acroForm.getField("Dermatitis");
-			PDCheckBox vitamins = (PDCheckBox) acroForm.getField("Vitamins");
-			PDCheckBox acid = (PDCheckBox) acroForm.getField("Acid");
-			if(pain!=null)
-				pain.check();
-			if(derm!=null)
-				derm.check();
-			if(vitamins!=null)
-				vitamins.check();
-			if(acid!=null)
-				acid.check();
-			File file = File.createTempFile("FAX", ".pdf");
-			pdfDocument.save(file);
-			return file;
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			return null;
-		}  catch (IllegalArgumentException e2) {
-			throw new ScriptException("Illegal Argument");
+			case "017010":
+			{
+				if(type==InsuranceType.Type.PRIVATE_INSURANCE) {
+					AddScript(record,number,Drug.Fenoprofen400,null);
+					AddScript(record,number,Drug.Chlorzoxazone250,null);
+					AddScript(record,number,Drug.Cyclobenzaprine7_5mg,null);
+					break;
+				}
+				else {
+					AddScript(record,number,Drug.Naproxen375, null);
+					AddScript(record,number,Drug.OmegaEthylEster, null);
+					break;
+				}
+			}
+			case "610097":
+			{
+				AddScript(record,number,Drug.Clobetasol180,null);
+				AddScript(record,number,Drug.OmegaEthylEster, null);
+			}
+			default:
+				break;
 		}
 	}
 	public void close() {

@@ -4,6 +4,8 @@ import client.Record;
 
 public class Argus {
 	public static String Filter(Record record) {
+		if(record.getBin().equalsIgnoreCase("600428"))
+			return InsuranceType.PRIVATE_VERIFIED;
 		switch(record.getPcn()) {
 			case "02150000":
 			case "05180000":
@@ -15,7 +17,7 @@ public class Argus {
 			case "CIHSCARE":
 				return InsuranceType.MEDICARE_COMMERCIAL;
 			case "CIMCARE":
-				return InsuranceType.MEDICARE_TELMED;
+				return InsuranceType.MEDICARE_COMMERCIAL;
 			case "07630000":
 				return InsuranceType.MEDICARE_COMMERCIAL;
 			case "01420000":

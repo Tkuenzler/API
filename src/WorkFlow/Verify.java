@@ -19,8 +19,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import DoctorChase.MessageStatus;
 import Fax.Fax;
-import Fax.MessageStatus;
+import ResponseBuilder.DoctorResponseBuilder;
 import client.DatabaseClient;
 import client.FaxedRecord;
 import client.InfoDatabase;
@@ -53,7 +54,8 @@ public class Verify {
 		sb.append("<td>Pharmacy</td>");
 		sb.append("</tr>");
 		for(FaxedRecord record: list) {
-			ring = Fax.GetRingCentralClient(record.getPharmacy(),database);
+			Record r = client.GetFullRecord(record.getId(), "Leads");
+			ring = Fax.GetRingCentralClient(r,database);
 			if(!ring.login())
 				continue;
 			String status = GetMessageFromJSON(record,ring);
@@ -95,10 +97,11 @@ public class Verify {
 		sb.append("<td>Pharmacy</td>");
 		sb.append("</tr>");
 		for(FaxedRecord record: list) {
-			ring = Fax.GetRingCentralClient(record.getPharmacy(),database);
+			Record r = client.GetFullRecord(record.getId(), "Leads");
+			ring = Fax.GetRingCentralClient(r,database);
 			if(!ring.login())
 				continue;
-			Record r = client.GetFullRecord(record.getId(), "Leads");
+		
 			Script script = Fax.GetScript(r,database);
 			String result = GetFaxFromJSON(r,ring,script);
 			if(result.startsWith("1")) {
@@ -153,15 +156,15 @@ public class Verify {
 		rd.close();
 		connection.disconnect();
 		if(CheckError(sb.toString()))
-			return createDoctorRepsonse("DEACTIVE","DOCTOR NPI IS DEACTIVE").toString();
+			return DoctorResponseBuilder.DoctorResponse(false,"DOCTOR NPI IS DEACTIVE","").toString();
 		Doctor d = JSONParser.CreateDoctor(sb.toString());
 		switch(d.getEnumeration_type()) {
 			case "NPI-1":
 				break;
 			case "NPI-2":
-				return createDoctorRepsonse("INVALID MUST GET DR NPI NOT OFFICE NPI",d.getEnumeration_type()).toString();
+				return DoctorResponseBuilder.DoctorResponse(false,"INVALID MUST GET DR NPI NOT OFFICE NPI","").toString();
 			default:
-				return createDoctorRepsonse("UNKNOWN ENUMERATION TYPE",d.getEnumeration_type()).toString();
+				return DoctorResponseBuilder.DoctorResponse(false,"UNKNOWN ENUMERATION TYPE","").toString();
 		}
 		InfoDatabase db = new InfoDatabase();
 		for(int i = 0;i<d.getCode().length;i++) {
@@ -170,15 +173,15 @@ public class Verify {
 			switch(s) {
 				case "true":
 					db.close();
-					return createDoctorRepsonse("VALID",d.getType()[i]).toString();
+					return DoctorResponseBuilder.DoctorResponse(true,"",d.getType()[i]).toString();
 				case "false":
 					continue;
 				default:
 					db.close();
-					return createDoctorRepsonse("INVALID",d.getType()[i]).toString();
+					return DoctorResponseBuilder.DoctorResponse(false,"INVALID DOCTOR",d.getType()[i]).toString();
 			}		
 		}
-		return createDoctorRepsonse("INVALID",d.getType()[0]).toString();
+		return DoctorResponseBuilder.DoctorResponse(false,"INVALID DOCTOR",d.getType()[0]).toString();
  	}
  	
  	@GET
@@ -209,17 +212,11 @@ public class Verify {
 		return false;
  		
  	}
- 	private JSONObject createDoctorRepsonse(String valid,String drType) throws JSONException {
- 		JSONObject obj = new JSONObject();
- 		obj.put(ResponseKeys.VALID, valid);
- 		obj.put(ResponseKeys.DR_TYPE, drType);
- 		return obj;
- 	}
  	private String GetFaxFromJSON(Record record,RingCentralClient ring,Script script) throws IOException, JSONException, InterruptedException, ScriptException {
  		String status = null;
  		boolean success = false;
  		do {
- 			JSONObject result = Fax.SendFax(record,ring,script);
+ 			JSONObject result = Fax.SendFax(record,ring,script.getFile());
  			status = ring.GetStatusFromRingCentral(result);
 			success = ring.IsRingCentralResponseSuccesful(result);
 			if(!success) {
@@ -247,7 +244,7 @@ public class Verify {
 						Thread.sleep(result.getInt("Rate"));
 						break;
 					case RingCentralClient.Errors.INVALID_URL:
-						RingCentralClient fax = Fax.GetRingCentralClient("","");
+						RingCentralClient fax = Fax.GetRingCentralClient(null,"");
 						fax.login();
 						return GetMessageFromJSON(record, fax);
 					default:

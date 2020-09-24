@@ -7,19 +7,16 @@ import java.net.HttpURLConnection;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-
 import org.apache.http.client.utils.URIBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
-
+import DoctorChase.MessageStatus;
 import Fax.Fax;
-import Fax.MessageStatus;
 import client.DatabaseClient;
 import client.FaxedRecord;
 import client.Record;
@@ -100,7 +97,7 @@ public class DoctorChase {
 		int update = -2;
 		if(!id.equalsIgnoreCase("")) {
 			if(disposition.equalsIgnoreCase("NO ANSWER"))
-				update = client.setCallBack(oldRecord);
+				update = client.setCallBack(oldRecord,TABLE);
 			else
 				update = client.UpdateRecordForDr(oldRecord, TABLE,0);
 		}		
@@ -177,12 +174,13 @@ public class DoctorChase {
 		if(record==null)
 			return "RECORD IS NULL";
 		//Get faxing client and login
-		RingCentralClient ringClient = Fax.GetRingCentralClient(record.getPharmacy(),database);
+		RingCentralClient ringClient = Fax.GetRingCentralClient(record,database);
 		if(!ringClient.login())
 			return "LOGIN FAILED";
 		String result = null;
 		try {
 			Script script = Fax.GetScript(record,database);
+			script.CreateAndPopulate(record, ringClient.number);
 			result = GetFaxFromJSON(record,ringClient,script);
 			if(result.startsWith("1")) {
 				String messageId = result;
@@ -315,63 +313,51 @@ public class DoctorChase {
 		List<FaxedRecord> list = client.getMessageIds(agent);
 		if(list==null)
 			return;
-		for(FaxedRecord record: list) {
-			RingCentralClient ringCentral = Fax.GetRingCentralClient(record.getPharmacy(), database);
+		for(FaxedRecord faxedRecord: list) {
+			Record r = client.GetRecordById(faxedRecord.getId(), TABLE);
+			RingCentralClient ringCentral = Fax.GetRingCentralClient(r, database);
 			if(!ringCentral.login())
 				continue;
-			if(record.getStatus().equalsIgnoreCase(MessageStatus.QUEUED)) {
-				String status = GetMessageFromJSON(record,ringCentral);
+			if(faxedRecord.getStatus().equalsIgnoreCase(MessageStatus.QUEUED)) {
+				String status = GetMessageFromJSON(faxedRecord,ringCentral);
 				if(!MessageStatus.IsValidStatus(status))  
 					continue;
 				else
-					record.setStatus(status);
+					faxedRecord.setStatus(status);
 			}
-			switch(record.getStatus()) {
+			switch(faxedRecord.getStatus()) {
 				case MessageStatus.SENDING_FAILED:
-					if(client.Attempted5Times(record)) {
+					if(client.Attempted5Times(faxedRecord)) {
 						//Unconfirm Doctor and Delete Record
-						client.UnconfirmDoctor(record);
-						client.DeleteFaxedRecord(record.getPhone());
+						client.UnconfirmDoctor(faxedRecord);
+						client.DeleteFaxedRecord(faxedRecord.getPhone());
 						continue;
 					}
-					Record r = client.GetRecordById(record.getId(), "Leads");
 					Script script = Fax.GetScript(r,database);
-					JSONObject result = Fax.SendFax(r,ringCentral,script);
+					script.CreateAndPopulate(r, ringCentral.number);
+					JSONObject result = Fax.SendFax(r,ringCentral,script.getFile());
 					if(ringCentral.IsRingCentralResponseSuccesful(result)) {
 						String id = ringCentral.GetStatusFromRingCentral(result);
-						record.setMessage_id(id);
-						record.setStatus(MessageStatus.QUEUED);
-						client.UpdateMessageStatus(record);
-						client.IncrementFax(record.getPhone());
-						client.UpdateFaxedRecord(record);
+						faxedRecord.setMessage_id(id);
+						faxedRecord.setStatus(MessageStatus.QUEUED);
+						client.UpdateMessageStatus(faxedRecord);
+						client.IncrementFax(faxedRecord.getPhone());
+						client.UpdateFaxedRecord(faxedRecord);
 					}
 					break;
 				case MessageStatus.SENT:
-					client.UpdateMessageStatus(record);
-					client.UpdateFaxedRecord(record);
-					client.DeleteFaxedRecord(record.getPhone());
+					client.UpdateMessageStatus(faxedRecord);
+					client.UpdateFaxedRecord(faxedRecord);
+					client.DeleteFaxedRecord(faxedRecord.getPhone());
 					break;
 				case MessageStatus.QUEUED:
-					client.UpdateFaxedRecord(record);
+					client.UpdateFaxedRecord(faxedRecord);
 					break;
 				case "ERROR":
 					break;
 				default:
 					continue;
 			}
-		}
-	}
-	
-	private int UpdateDisposition(String id,String disposition,DatabaseClient client) {
-		if(id.equalsIgnoreCase(""))
-			return -3;
-		else if(disposition.equalsIgnoreCase("")) {
-			client.setUsed(id, 0);
-			return -3;
-		}
-		else {
-			client.setUsed(id, 0);
-			return client.UpdateTelmedDisposition(id, disposition);
 		}
 	}
 	
@@ -408,7 +394,7 @@ public class DoctorChase {
  		String status = null;
  		boolean success = false;
  		do {
- 			JSONObject result = Fax.SendFax(record,ring,script);
+ 			JSONObject result = Fax.SendFax(record,ring,script.getFile());
  			status = ring.GetStatusFromRingCentral(result);
 			success = ring.IsRingCentralResponseSuccesful(result);
 			if(!success) {

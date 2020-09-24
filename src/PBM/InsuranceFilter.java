@@ -3,6 +3,76 @@ package PBM;
 import client.Record;
 
 public class InsuranceFilter {
+	public static String GetPBMFromBin(Record record) {
+		switch(record.getBin()) {
+			case "004336": 
+				if(record.getGrp().equalsIgnoreCase("788257") || record.getGrp().equalsIgnoreCase("RXCVSD"))
+					return "SilverScripts/Wellcare";
+				else
+					return "Caremark";
+			case "610239":
+			case "610591":
+			case "020107":
+			case "610084":
+				return "Caremark";
+			case "020115":
+			case "020099":
+				return "Anthem";
+			case "610502":
+				return "Aetna";
+			case "017010":
+				return "Cigna";
+			case "610014":
+			case "400023":
+			case "003858":
+			case "011800":
+				return "Express Scripts";
+			case "012833":
+			case "011552":
+			case "016499":
+			case "016895":
+			case "014897":
+			case "800001":
+			case "004915":
+			case "015905":
+			case "610455":
+			case "610212":
+				return "Prime Therapeutics";
+			case "610011":
+			case "015814":
+			case "001553":
+			case "610593":
+			case "011214":
+				return "Catamaran";
+			case "015574":
+			case "015921":
+			case "003585":
+				return "Medimpact";
+			case "011842":
+			case "610279":
+			case "610097":
+			case "610494":
+			case "610127": 
+				return "OptumRx";
+			case "600428":
+				return "Argus";
+			case "005947":
+			case "603286":
+				return "Catalyst Rx";
+			case "015599":
+			case "015581":
+			case "610649":
+				return "Humana";
+			case "018117":
+				return "Magellan Rx ";
+			case "610602":
+				return "Navitus";
+			case "017043":
+				return "ProCare Rx";
+			default:
+				return record.getBin();
+		}
+	}
 	public static String Filter(Record record) {
 		String insurance = null;
 		switch(record.getBin()) {
@@ -27,10 +97,9 @@ public class InsuranceFilter {
 				break;
 			//Anthem
 			case "020099":
+			case "020115":
 				insurance = Anthem.Filter(record);
 				break;
-			case "020115":
-				return InsuranceType.MEDICARE_TELMED;
 			case "610084":
 				insurance =  InsuranceType.MEDICAID;
 				break;
@@ -179,8 +248,9 @@ public class InsuranceFilter {
 				return InsuranceType.Type.MEDICARE_INSURANCE;
 			case InsuranceType.MOLINA:
 			case InsuranceType.MEDICAID:
-			case InsuranceType.TRICARE:
 				return InsuranceType.Type.MEDICAID_INSURANCE;
+			case InsuranceType.TRICARE:
+				return InsuranceType.Type.TRICARE_INSURANCE;
 			default:
 				return 0;
 		}

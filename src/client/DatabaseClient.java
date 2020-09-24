@@ -18,9 +18,10 @@ import javax.swing.JOptionPane;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import Fax.FaxStatus;
-import Fax.MessageStatus;
+import DoctorChase.FaxStatus;
+import DoctorChase.MessageStatus;
 import Fax.TelmedStatus;
+import JSONParameters.TriageParameters;
 import PBM.InsuranceFilter;
 import PBM.InsuranceType;
 import ResponseBuilder.TelmedResponse;
@@ -60,16 +61,16 @@ public class DatabaseClient {
 			e.printStackTrace();
 		} 
 	}
-	public int updateRecord(Record record,String table,String afid,String pharmacy,String agent,String callCenter) {
+	public JSONObject updateRecord(Record record,String table,String afid,String pharmacy,String agent,String callCenter) throws JSONException {
 		try {
 			Statement stmt = connect.createStatement();
-			return stmt.executeUpdate(buildUpdateStatement(record,table,afid,pharmacy,agent,callCenter));
+			int value =  stmt.executeUpdate(buildUpdateStatement(record,table,afid,pharmacy,agent,callCenter));
+			return new JSONObject().put("value", value);
 		} catch(SQLException ex) {
-			System.out.print(ex.getMessage());
-			return 0;
+			return new JSONObject().put("value", ex.getErrorCode()).put("message", ex.getMessage());
 		}
 	}
-	public int addRecord(Record record,String table,String AFID,String pharmacy,String agent,String callCenter) {
+	public JSONObject addRecord(Record record,String table,String AFID,String pharmacy,String agent,String callCenter) throws JSONException {
 		PreparedStatement stmt = null;
 		try {
 			stmt = connect.prepareStatement(buildAddStatement(table));
@@ -208,24 +209,23 @@ public class DatabaseClient {
 				case Columns.DATE_ADDED:
 					stmt.setString(i, getCurrentDate("yyyy-MM-dd"));
 					break;
-				//BLANKS
-				case Columns.TELMED_DISPOSITION:
-					stmt.setString(i, "");
-					break;
 				case Columns.MESSAGE_ID:
 					stmt.setString(i, "");
 					break;
 				case Columns.SOURCE:
 					stmt.setString(i, record.getSource());
 					break;
+				case Columns.PRODUCTS:
+					stmt.setString(i, record.getProductsAsString());
+					break;
 				}				
 			} 
 			int add = stmt.executeUpdate();
 			if(add==1)
 				AddToAlternateScript(record);
-			return add;
+			return new JSONObject().put("value", add);
 		} catch(SQLException ex) {
-			return ex.getErrorCode();
+			return new JSONObject().put("value", ex.getErrorCode()).put("message", ex.getMessage());
 		} finally {
 			try {
 				if(stmt!=null) stmt.close();
@@ -525,8 +525,8 @@ public class DatabaseClient {
 			}
 		} 
 	}
-	public int setCallBack(Record record) {
-		String sql = "Update `Leads` SET `"+Columns.CONFIRM_DOCTOR+"` = -1, `"+Columns.LAST_UPDATED+"` = CURRENT_TIMESTAMP WHERE `"+Columns.ID+"` = '"+record.getId()+"'";
+	public int setCallBack(Record record,String table) {
+		String sql = "Update `"+table+"` SET `"+Columns.CONFIRM_DOCTOR+"` = -1, `"+Columns.LAST_UPDATED+"` = CURRENT_TIMESTAMP WHERE `"+Columns.ID+"` = '"+record.getId()+"'";
 		Statement stmt = null;
 		try {
 			stmt = connect.createStatement();
@@ -719,7 +719,7 @@ public class DatabaseClient {
 	public synchronized Record GetLiveLead(String table,String agent,String roadmap) {
 		RoadMapClient map = new RoadMapClient(roadmap);
 		String pharmacies = map.getPharmacyQueryForDrChase();
-		String sql = "SELECT * FROM `"+table+"` WHERE `CHASE_COUNT` < 20  AND `"+Columns.USED+"` = 0 AND (`"+Columns.FAX_DISPOSITION+"` = '' OR `"+Columns.FAX_DISPOSITION+"` = '"+FaxStatus.WRONG_FAX+"')"
+		String sql = "SELECT * FROM `"+table+"` WHERE (`EMDEON_STATUS` = 'FOUND' AND `carrier` <> 'SilverScripts/Wellcare') AND `CHASE_COUNT` < 20  AND `"+Columns.USED+"` = 0 AND (`"+Columns.FAX_DISPOSITION+"` = '' OR `"+Columns.FAX_DISPOSITION+"` = '"+FaxStatus.WRONG_FAX+"')"
 				+ " AND (`"+Columns.CONFIRM_DOCTOR+"` = 0 OR (`"+Columns.CONFIRM_DOCTOR+"` = -1 AND `"+Columns.LAST_UPDATED+"` < DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL - 60 MINUTE))) AND"+pharmacies+" ORDER BY `DATE_ADDED` DESC";
 		Record record = null;
 		Statement stmt = null;
@@ -778,7 +778,7 @@ public class DatabaseClient {
 		String confirm_and_recall = "(`CONFIRM_DOCTOR` = 1 OR (`CONFIRM_DOCTOR` = -1 AND `LAST_UPDATED` < DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL - 30 MINUTE)))";
 		String SEVEN_DAYS_OLD = "(`FAX_DISPOSITION` = '' AND `MESSAGE_STATUS` = 'Sent' AND `FAX_SENT_DATE` < DATE_ADD(CURDATE(), INTERVAL -5 DAY))";
 		String SENDING_FAILED = "(`FAX_DISPOSITION` = '' AND `MESSAGE_STATUS` = 'SendingFailed' AND `FAX_ATTEMPTS` <= 3)";
-		String sql = "SELECT * FROM `"+table+"` WHERE "+confirm_and_recall+" AND ("+SEVEN_DAYS_OLD+" OR "+SENDING_FAILED+") AND `"+Columns.DR_CHASE_AGENT+"` = '"+agent+"' AND "+pharmacies+" ORDER BY `FAX_SENT_DATE` ASC";
+		String sql = "SELECT * FROM `"+table+"` WHERE (`EMDEON_STATUS` = 'FOUND' AND `carrier` <> 'SilverScripts/Wellcare') AND "+confirm_and_recall+" AND ("+SEVEN_DAYS_OLD+" OR "+SENDING_FAILED+") AND `"+Columns.DR_CHASE_AGENT+"` = '"+agent+"' AND "+pharmacies+" ORDER BY `FAX_SENT_DATE` ASC";
 		Record record = null;
 		Statement stmt = null;
 		ResultSet set = null;
@@ -822,7 +822,7 @@ public class DatabaseClient {
 		String confirm_and_recall = "(`CONFIRM_DOCTOR` = 1 OR (`CONFIRM_DOCTOR` = -1 AND `LAST_UPDATED` < DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL - 30 MINUTE)))";
 		String SEVEN_DAYS_OLD = "(`FAX_DISPOSITION` = '' AND `MESSAGE_STATUS` = 'Sent' AND `FAX_SENT_DATE` < DATE_ADD(CURDATE(), INTERVAL -5 DAY))";
 		String SENDING_FAILED = "(`FAX_DISPOSITION` = '' AND `MESSAGE_STATUS` = 'SendingFailed' AND `FAX_ATTEMPTS` <= 3)";
-		String sql = "SELECT * FROM `"+table+"` WHERE "+confirm_and_recall+" AND ("+SEVEN_DAYS_OLD+" OR "+SENDING_FAILED+") AND "+pharmacies+" ORDER BY `FAX_SENT_DATE` ASC";
+		String sql = "SELECT * FROM `"+table+"` WHERE (`EMDEON_STATUS` = 'FOUND' AND `carrier` <> 'SilverScripts/Wellcare') AND "+confirm_and_recall+" AND ("+SEVEN_DAYS_OLD+" OR "+SENDING_FAILED+") AND "+pharmacies+" ORDER BY `FAX_SENT_DATE` ASC";
 		Record record = null;
 		Statement stmt = null;
 		ResultSet set = null;
@@ -980,33 +980,7 @@ public class DatabaseClient {
 			}
 		}
 	}
-	public int UpdateTelmedDisposition(String id,String disposition) {
-		String sql = "UPDATE `Leads` SET `"+Columns.TELMED_DISPOSITION+"` = '"+disposition+"' WHERE `"+Columns.ID+"` = '"+id+"'";
-		Statement stmt = null;
-		try {
-			stmt = connect.createStatement();
-			int update = stmt.executeUpdate(sql);
-			if(update>0 && disposition.equalsIgnoreCase("FIXED"))
-				DeleteRecord(id);
-			return update;
-		} catch(SQLException ex) {
-			ex.printStackTrace();
-			return -1;
-		} catch(NullPointerException ex) {
-			ex.printStackTrace();
-			return -2;
-		} finally {
-			try {
-				if(stmt!=null) stmt.close();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
-	
-	
-	
+
 	private int DeleteRecord(String id) {
 		String sql = "DELETE FROM `Leads` WHERE `"+Columns.ID+"` = '"+id+"'";
 		Statement stmt = null;
@@ -1141,16 +1115,17 @@ public class DatabaseClient {
 		else
 			return 0;
 	}
-	public int AddToTelmed(Record record,String ip,String pharmacy,String callCenter) {
-		String sql = "INSERT INTO `TELMED` (`first_name`,`last_name`,`dob`,`address`,`city`,`state`,`zip`,`phonenumber`,`gender`,`ssn`,`agent`,`TELMED_STATUS`,`ip`,`carrier`,`insurance_name`,`bin`,`grp`,`pcn`,`DATE_MODIFIED`,`DATE_ADDED`,`PHARMACY`,`CALL_CENTER`,`SOURCE`,`NOTES`,`INSURANCE_TYPE`) "
+	public JSONObject AddToTelmed(Record record,String ip,String pharmacy,String callCenter) throws JSONException {
+		String sql = "INSERT INTO `TELMED` (`first_name`,`last_name`,`dob`,`address`,`city`,`state`,`zip`,`phonenumber`,`gender`,`ssn`,`agent`,`TELMED_STATUS`,`ip`,`carrier`,`insurance_name`,`policy_id`,`bin`,`grp`,`pcn`,`DATE_MODIFIED`,`DATE_ADDED`,`PHARMACY`,`CALL_CENTER`,`SOURCE`,`NOTES`,`INSURANCE_TYPE`,`NPI`) "
 				+ "VALUES ('"+record.getFirstName()+"','"+record.getLastName()+"','"+record.getDob()+"','"+record.getAddress()+"','"+record.getCity()+"','"+record.getState()+"','"+record.getZip()+"','"+record.getPhone()+"','"+record.getGender()+"','"+record.getSsn()+"','"+record.getAgent()+"',"
-				+ "'New Patient','"+ip+"', '"+record.getCarrier()+"', '"+record.getInsuranceName()+"','"+record.getBin()+"','"+record.getGrp()+"','"+record.getPcn()+"','"+getCurrentDate("yyyy-MM-dd")+"','"+getCurrentDate("yyyy-MM-dd")+"','"+pharmacy+"','"+callCenter+"','"+record.getSource()+"','','"+record.getType()+"')";
+				+ "'New Patient','"+ip+"', '"+record.getCarrier()+"', '"+record.getInsuranceName()+"','"+record.getPolicyId()+"','"+record.getBin()+"','"+record.getGrp()+"','"+record.getPcn()+"','"+getCurrentDate("yyyy-MM-dd")+"','"+getCurrentDate("yyyy-MM-dd")+"','"+pharmacy+"','"+callCenter+"','"+record.getSource()+"','','"+record.getType()+"','"+record.getNpi()+"')";
 		Statement stmt = null;
 		try {
 			stmt = connect.createStatement();
-			return stmt.executeUpdate(sql);
+			int value =  stmt.executeUpdate(sql);
+			return new JSONObject().put("value",value);
 		} catch(SQLException ex) {
-			return ex.getErrorCode();
+			return new JSONObject().put("value", ex.getErrorCode()).put("message", ex.getMessage());
 		}  finally {
 			try {
 				if(stmt!=null) stmt.close();
@@ -1488,23 +1463,7 @@ public class DatabaseClient {
 			}
 		}
 	}
-	public int UpdateFailedTelmedDisposition(String phone,String disposition) {
-		String sql = "UPDATE `TELMED` SET `USED` = 0, `CALL_DISPOSITION` = '"+disposition+"' WHERE `phonenumber` = '"+phone+"'";
-		Statement stmt = null;
-		try {
-			stmt = connect.createStatement();
-			return stmt.executeUpdate(sql);
-		} catch(SQLException ex) {
-			ex.printStackTrace();
-			return -2;
-		} finally {
-			try {
-				if(stmt!=null)stmt.close();
-			} catch(SQLException ex) {
-				ex.printStackTrace();
-			}
-		}
-	}
+	
 	public String GetTelmedStatus(String phone) {
 		String sql = "SELECT * FROM `TELMED` WHERE `phonenumber` = '"+phone+"'";
 		Statement stmt = null;
@@ -1996,6 +1955,8 @@ public class DatabaseClient {
 				String status = set.getString(TelmedColumns.TELMED_STATUS);
 				if(TelmedStatus.IfCanEnroll(status))
 					return true;
+				else if(status.equalsIgnoreCase(TriageParameters.TRIAGE_COMPLETE) || status.equalsIgnoreCase(TriageParameters.TRIAGE_INCOMPLETE))
+					return true;
 				else
 					return false;
 			}
@@ -2019,6 +1980,85 @@ public class DatabaseClient {
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+	}
+	
+	public synchronized Record GetLiveLeadDME(String table,String agent) {
+		String sql = "SELECT * FROM `"+table+"` WHERE `CHASE_COUNT` < 20  AND `"+Columns.USED+"` = 0 AND (`"+Columns.FAX_DISPOSITION+"` = '' OR `"+Columns.FAX_DISPOSITION+"` = '"+FaxStatus.WRONG_FAX+"')"
+				+ " AND (`"+Columns.CONFIRM_DOCTOR+"` = 0 OR (`"+Columns.CONFIRM_DOCTOR+"` = -1 AND `"+Columns.LAST_UPDATED+"` < DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL - 60 MINUTE))) ORDER BY `DATE_ADDED` DESC";
+		Record record = null;
+		Statement stmt = null;
+		ResultSet set = null;
+		InfoDatabase info = new InfoDatabase();
+		try {
+			stmt = connect.createStatement();
+			set = stmt.executeQuery(sql);
+			while(set.next()) { 
+				String zipcode = set.getString("zip");
+				String state = set.getString("state");
+				int offset = info.GetOffSet(zipcode,state);
+				if(IsOpen(offset)) {
+					record = new Record(set);
+					record.record_type = "Live";
+					setUsed(record.getFirstName()+""+record.getLastName()+""+record.getPhone(),table,1,agent);
+					return record;
+				}
+				else
+					continue;
+			}
+			return null;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		} finally {
+			try {
+				if(set!=null) set.close();
+				if(stmt!=null) stmt.close();
+				if(info!=null)info.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	public synchronized Record GetSentLeadDME(String table,String agent) {
+		String sql = "SELECT * FROM `"+table+"` WHERE `MESSAGE_STATUS` = 'SENT' AND `LAST_UPDATED` >= ";
+		Record record = null;
+		Statement stmt = null;
+		ResultSet set = null;
+		InfoDatabase info = new InfoDatabase();
+		try {
+			stmt = connect.createStatement();
+			set = stmt.executeQuery(sql);
+			while(set.next()) { 
+				String zipcode = set.getString("zip");
+				String state = set.getString("state");
+				int offset = info.GetOffSet(zipcode,state);
+				if(IsOpen(offset)) {
+					record = new Record(set);
+					record.record_type = "Live";
+					setUsed(record.getFirstName()+""+record.getLastName()+""+record.getPhone(),table,1,agent);
+					return record;
+				}
+				else
+					continue;
+			}
+			return null;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		} finally {
+			try {
+				if(set!=null) set.close();
+				if(stmt!=null) stmt.close();
+				if(info!=null)info.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -2074,16 +2114,16 @@ public class DatabaseClient {
 		public static final String LAST_UPDATED = "LAST_UPDATED";
 		public static final String MESSAGE_ID = "MESSAGE_ID";
 		public static final String CONFIRM_DOCTOR = "CONFIRM_DOCTOR";
-		public static final String TELMED_DISPOSITION = "TELMED_DISPOSITION";
 		public static final String PAIN_LOCATION = "PAIN_LOCATION";
 		public static final String PAIN_CAUSE = "PAIN_CAUSE";
 		public static final String DR_CHASE_AGENT = "DR_CHASE_AGENT";
 		public static final String SOURCE = "SOURCE";
+		public static final String PRODUCTS = "PRODUCTS";
 		public static final String[] DR_HEADERS = {NPI,DR_FIRST,DR_LAST,DR_ADDRESS1,DR_CITY,DR_STATE,DR_ZIP,DR_PHONE,DR_FAX,FAX_DISPOSITION,FAX_DISPOSITION_DATE,USED,CONFIRM_DOCTOR};
 		
 		public static final String[] HEADERS = {ALL,FIRST_NAME,LAST_NAME,DOB,AGE,PHONE_NUMBER,ADDRESS,CITY,STATE,ZIP,EMDEON_STATUS,EMDEON_TYPE,TYPE,LAST_EMDEON_DATE,//12
-				CARRIER,INSURANCE_NAME,POLICY_ID,BIN,GROUP,PCN,NPI,DR_TYPE,DR_FIRST,DR_LAST,DR_ADDRESS1,DR_CITY,DR_STATE,NOTES,CONTRACT_ID,BENEFIT_ID,
-				DR_ZIP,DR_PHONE,DR_FAX,SSN,GENDER,ID,PAIN_LOCATION,PAIN_CAUSE,AGENT,FAX_DISPOSITION,MESSAGE_STATUS,AFID,SOURCE,TELMED_DISPOSITION,MESSAGE_ID,CALL_CENTER,PHARMACY,DATE_ADDED};//16
+				CARRIER,INSURANCE_NAME,POLICY_ID,BIN,GROUP,PCN,NPI,DR_TYPE,DR_FIRST,DR_LAST,DR_ADDRESS1,DR_CITY,DR_STATE,NOTES,CONTRACT_ID,BENEFIT_ID,PRODUCTS,
+				DR_ZIP,DR_PHONE,DR_FAX,SSN,GENDER,ID,PAIN_LOCATION,PAIN_CAUSE,AGENT,FAX_DISPOSITION,MESSAGE_STATUS,AFID,SOURCE,MESSAGE_ID,CALL_CENTER,PHARMACY,DATE_ADDED};//16
 		
 		public static final String[] UPDATE_RECORD_HEADERS = {FIRST_NAME,LAST_NAME,DOB,PHONE_NUMBER,ADDRESS,CITY,STATE,ZIP,
 				EMDEON_STATUS,EMDEON_TYPE,LAST_EMDEON_DATE,TYPE,CARRIER,POLICY_ID,BIN,GROUP,PCN,CALL_CENTER,

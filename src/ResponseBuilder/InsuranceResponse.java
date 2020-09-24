@@ -1,4 +1,4 @@
-package InsuranceResponse;
+package ResponseBuilder;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -27,7 +27,7 @@ public class InsuranceResponse {
 		public static final String INVALID_PHARMACY = "Invalid Pharmacy";
 	}
 	
-	public static JSONObject BuildInsuranceResponse(Record record,JSONObject dme) throws JSONException {
+	public static JSONObject BuildInsuranceResponse(Record record) throws JSONException {
 		boolean check = false;
 		if(!record.getPharmacy().equalsIgnoreCase("")) 
 			check = true;
@@ -41,8 +41,7 @@ public class InsuranceResponse {
 				.put(Parameters.PCN, record.getPcn())
 				.put(Parameters.PHARMACY, record.getPharmacy())
 				.put(Parameters.TYPE, record.getType())
-				.put(Parameters.BENEFIT_ID, record.getBenefitId())
-				.put(Parameters.DME, dme);
+				.put(Parameters.BENEFIT_ID, record.getBenefitId());
 	}
 	public static JSONObject BuildFailedResponse(String message) throws JSONException {
 		return new JSONObject()

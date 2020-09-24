@@ -27,7 +27,7 @@ public class ErrorSQLLog {
 			return e.getErrorCode();
 		} finally {
 			try {
-				connect.close();
+				if(connect!=null)connect.close();
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				return e.getErrorCode();

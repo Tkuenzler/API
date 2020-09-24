@@ -1,4 +1,4 @@
-package Fax;
+package DoctorChase;
 
 public class FaxStatus {
 	public static final String BLANK = "";

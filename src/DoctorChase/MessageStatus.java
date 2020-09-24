@@ -1,4 +1,4 @@
-package Fax;
+package DoctorChase;
 
 public class MessageStatus {
 	

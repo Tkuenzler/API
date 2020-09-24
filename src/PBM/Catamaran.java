@@ -77,6 +77,7 @@ public class Catamaran {
 			case "CCMCAID":
 			case "*ALL":
 			case "034":
+			case "GCHP":
 				return InsuranceType.MEDICAID;
 			case "GCOMEDD":
 				return InsuranceType.MEDICARE_COMMERCIAL;

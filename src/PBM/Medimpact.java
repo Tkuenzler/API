@@ -7,6 +7,8 @@ public class Medimpact {
 		if(record.getBin().equalsIgnoreCase("015574"))
 			return Filter015574(record);
 		switch(record.getPcn()) {
+			case "56270":
+				return InsuranceType.MEDICAID;
 			default:
 				return FilterByGroup(record);
 		}
@@ -20,6 +22,8 @@ public class Medimpact {
 			case "103774":
 			case "10016720":
 			case "CCA01":
+			case "KAISER":
+			
 				return InsuranceType.MEDICAID;
 			case "10008217":
 				return InsuranceType.PRIVATE_UNKNOWN;

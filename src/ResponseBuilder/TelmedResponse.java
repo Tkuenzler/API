@@ -3,8 +3,11 @@ package ResponseBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import JSONParameters.TriageParameters;
+
 public class TelmedResponse {
 	public static final String SUCCESS = "success";
+	public static final String MESSAGE = "message";
 	public static final String ERROR = "error";
 	public static final String ERROR_CODE = "error_code";
 	public static final String DATE_ADDED = "date";
@@ -12,6 +15,7 @@ public class TelmedResponse {
 	public static final String LAST = "last_name";
 	public static final String RECORD_ID = "id";
 	public static final String AGENT = "agent";
+	public static final String TRIAGE = "TRIAGE";
 	public static final String PHARMACY = "pharmacy";
 	
 	public static class Errors {
@@ -25,9 +29,8 @@ public class TelmedResponse {
 			JSONObject blue_response = new JSONObject(json);
 			if(blue_response.getString("status").equalsIgnoreCase("success")) {
 				response.put(SUCCESS, true);
-				response.put(FIRST, data.getString("first_name"));
-				response.put(LAST, data.getString("last_name"));
-				response.put(RECORD_ID, blue_response.getString("patient_id"));
+				response.put(FIRST, data.getString(TriageParameters.FIRST_NAME));
+				response.put(LAST, data.getString(TriageParameters.LAST_NAME));
 			}
 			else {
 				response.put(SUCCESS, false);
@@ -52,13 +55,23 @@ public class TelmedResponse {
 			return null;
 		}
 	}
+	public static JSONObject BuildSuccessfulResponse(String message) {
+		try {
+			return new JSONObject()
+					.put(SUCCESS, true)
+					.put(MESSAGE, message);
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			return null;
+		}
+	}
 	public static JSONObject BuildSuccessfulResponse(JSONObject obj) {
 		try {
 			return new JSONObject()
 					.put(SUCCESS, true)
-					.put(FIRST, obj.getString("first_name"))
-					.put(LAST, obj.getString("last_name"))
-					.put(RECORD_ID, "");
+					.put(FIRST, obj.getString(TriageParameters.FIRST_NAME))
+					.put(LAST, obj.getString(TriageParameters.LAST_NAME))
+					.put(TRIAGE, obj);
 		} catch (JSONException e) {
 			// TODO Auto-generated catch block
 			return null;
@@ -69,6 +82,17 @@ public class TelmedResponse {
 			return new JSONObject()
 					.put(SUCCESS, false)
 					.put(ERROR, add);
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			return null;
+		}
+	}
+	public static JSONObject BuildFailedResponse(int add,String message) {
+		try {
+			return new JSONObject()
+					.put(SUCCESS, false)
+					.put(ERROR_CODE, add)
+					.put(ERROR, message);
 		} catch (JSONException e) {
 			// TODO Auto-generated catch block
 			return null;

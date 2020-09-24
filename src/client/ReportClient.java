@@ -18,7 +18,7 @@ import java.util.Set;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import Fax.FaxStatus;
+import DoctorChase.FaxStatus;
 import Fax.TelmedStatus;
 
 public class ReportClient {
@@ -53,6 +53,7 @@ public class ReportClient {
 			sb.append("<td>Date</td>");
 			sb.append("<td>Name</td>");
 			sb.append("<td>Phone</td>");
+			sb.append("<td>Ailment</td>");
 			sb.append("<td>Pharmacy</td>");
 			sb.append("<td>Marketing team</td>");
 			sb.append("</tr>");
@@ -64,6 +65,7 @@ public class ReportClient {
 				sb.append("<td>"+set.getString("REQUALIFIED_DATE")+"</td>");
 				sb.append("<td>"+set.getString("first_name") +" "+set.getString("last_name")+"</td>");
 				sb.append("<td>"+set.getString("phone_number")+"</td>");
+				sb.append("<td>"+set.getString("medication_category")+"</td>");
 				sb.append("<td>"+set.getString("PHARMACY")+"</td>");
 				sb.append("<td>"+set.getString("marketing_team")+"</td>");
 				sb.append("</tr>");

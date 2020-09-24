@@ -30,13 +30,6 @@ public class RingCentralClient {
 		public static int LIGHT = 50;
 		public static int AUTH = 5;
 	}
-	private class ResponseHeaders {
-		public static final String RATE_LIMIT_GROUP = "X-Rate-Limit-Group";
-		public static final String RATE_LIMIT_REMAINING = "X-Rate-Limit-Remaining";
-		public static final String RATE_LIMIT_WINDOW = "X-Rate-Limit-Window";
-		public static final String RATE_LIMIT_GROUP_LIMIT = "X-Rate-Limit-Limit";
-		public static final String RETRY_AFTER = "Retry-After";
-	}
 	private class StatusCodes {
 		public static final int SUCCESFUL_200 = 200;
 		public static final int SUCCESFUL_201 = 201;
@@ -286,49 +279,7 @@ public class RingCentralClient {
 				return CreateJSONObjectResult("Unkown Error",0,RateLimit.HEAVY);
 		}
 	}
-	public String FaxFile(File file,String faxLine) throws IOException {
-		//API-GROUP HEAVY
-		String responseString = null;
-		String boundary = "--Boundary_1_14413901_1361871080888";
-		JSONObject json = createFaxJSON(faxLine);
-		HttpPost post = new HttpPost(URLS.URL+URLS.FAX);
-		post.setHeader("Authorization", "Bearer "+ACCESS_TOKEN);
-		post.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
-		MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-		builder.setBoundary(boundary);
-		builder.addTextBody("json", json.toString(), ContentType.APPLICATION_JSON);
-		builder.addBinaryBody("content", file,ContentType.APPLICATION_OCTET_STREAM, "Fax.pdf");
-		HttpEntity multipart = builder.build();
-		post.setEntity(multipart);
-		CloseableHttpClient client = HttpClients.createDefault();
-		CloseableHttpResponse response = client.execute(post);		
-		HttpEntity entity = response.getEntity();
-		responseString = EntityUtils.toString(entity, "UTF-8");
-		int status_code = response.getStatusLine().getStatusCode();
-		LogResponse(URLS.FAX,status_code);
-		switch(status_code) {
-				case StatusCodes.SUCCESFUL_200:
-			case StatusCodes.SUCCESFUL_201:
-			case StatusCodes.SUCCESFUL_202:
-			case StatusCodes.SUCCESFUL_204:
-			case StatusCodes.SUCCESFUL_206:
-			case StatusCodes.SUCCESFUL_BULK:
-				client.close();
-				response.close();
-				return getMessageId(responseString);
-			case StatusCodes.EXPIRED_TOKEN:
-				refreshToken();
-				return FaxFile(file,faxLine);
-			case StatusCodes.INVALID_URL: 
-				return Errors.INVALID_URL;
-			case StatusCodes.TOO_MANY_REQUESTS:
-				return Errors.TOO_MANY_REQUEST;
-			case StatusCodes.SERVICE_UNAVAILABLE:
-				return Errors.SERVICE_UNAVAILABLE;
-			default: 
-				return Errors.UNKNOWN_ERROR;										
-		}
-	}
+	
 	public boolean checkConnection() {
 		HttpGet get = new HttpGet(URLS.URL+URLS.CHECK_CONNECTION);
 		CloseableHttpClient client = HttpClients.createDefault();
@@ -402,16 +353,16 @@ public class RingCentralClient {
 		}
 		
 	}
-	private JSONObject CreateJSONObjectResult(String message,int success,int rate) throws JSONException {
+	private JSONObject CreateJSONObjectResult(String message_id,int success,int rate) throws JSONException {
 		JSONObject result = new JSONObject();
 		result.put("Success", success);
-		result.put("Message", message);
+		result.put("Message_Id", message_id);
 		result.put("Rate", 60000/rate);
 		return result;
 	}
 	public String GetStatusFromRingCentral(JSONObject obj) throws JSONException {
- 		if(obj.has("Message"))
- 			return obj.getString("Message");
+ 		if(obj.has("Message_Id"))
+ 			return obj.getString("Message_Id");
  		else
  			return "Error No Message Found";
  	}

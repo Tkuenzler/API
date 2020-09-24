@@ -17,7 +17,7 @@ public class ApplicationConfig extends ResourceConfig {
 	    register(WorkFlow.AddRecord.class);
 	    register(WorkFlow.Report.class);
 	    register(WorkFlow.DME.class);
-	    register(WorkFlow.BlueMosiac.class);
+	    register(WorkFlow.Chase.class);
     }
 	/*
 	 * public Set<Class<?>> getClasses() {
@@ -34,5 +34,3 @@ public class ApplicationConfig extends ResourceConfig {
         return s;
         */
 }
-
-//extends Application

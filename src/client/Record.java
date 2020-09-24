@@ -6,10 +6,12 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import Database.Columns.LeadColumns;
 import PBM.InsuranceFilter;
 import PBM.InsuranceType;
 
@@ -26,7 +28,9 @@ public class Record implements Cloneable{
 	String contractId,benefitId;
 	boolean confirmDoctor = false;
 	String painCause,painLocation;
-	int age;
+	String[] products;
+	int received,confirmed,age,chaseCount;
+	String receivedDate,notes,faxNotes;
 	//DME SHIT
 	String braceList;
 	public Record(ResultSet result) {
@@ -44,7 +48,7 @@ public class Record implements Cloneable{
 			setZip(result.getString(DatabaseClient.Columns.ZIP));
 			setPhone(result.getString(DatabaseClient.Columns.PHONE_NUMBER).replaceAll("[()\\s-]+", ""));
 			setDob(result.getString(DatabaseClient.Columns.DOB));
-			setCarrier(toProperCase(result.getString(DatabaseClient.Columns.CARRIER)));
+			setCarrier(result.getString(DatabaseClient.Columns.CARRIER));
 			setBin(result.getString(DatabaseClient.Columns.BIN));
 			setPcn(result.getString(DatabaseClient.Columns.PCN));
 			setGrp(result.getString(DatabaseClient.Columns.GROUP));
@@ -66,6 +70,12 @@ public class Record implements Cloneable{
 			setPainCause(result.getString(DatabaseClient.Columns.PAIN_CAUSE));
 			setDoctorConfirmed(result.getInt(DatabaseClient.Columns.CONFIRM_DOCTOR) == 1 ? true : false);
 			setAge(result.getInt(DatabaseClient.Columns.AGE));
+			setProducts(result.getString(DatabaseClient.Columns.PRODUCTS));
+			setNotes(result.getString(LeadColumns.NOTES));
+			setReceived(result.getInt(LeadColumns.RECEIVED));
+			setConfirmed(result.getInt(LeadColumns.CONFIRM_DOCTOR));
+			setReceivedDate(result.getString(LeadColumns.RECEIVED_DATE));
+			setChaseCount(result.getInt(LeadColumns.CHASE_COUNT));
 			ResultSetMetaData rsmd = result.getMetaData();
 			if(hasColumn(rsmd,"BRACES"))
 				setBraceList(result.getString("BRACES"));
@@ -73,21 +83,6 @@ public class Record implements Cloneable{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
-	private class InsuranceKeys {
-		public final static String STATUS = "STATUS";
-		public final static String TYPE = "TYPE";
-		public final static String CARRIER = "CARRIER";
-		public final static String POLICY_ID = "POLICY_ID";
-		public final static String BIN = "BIN";
-		public final static String GROUP = "GROUP";
-		public final static String PCN = "PCN";
-		public final static String CHECK = "CHECK";
-		public final static String PHARMACY = "PHARMACY";
-		public final static String CONTRACT_ID = "CONTRACT_ID";
-		public final static String BENEFIT_ID = "BENEFIT_ID";
-		public final static String ROAD_MAP = "ROAD_MAP";
-		public final static String DME ="DME";
 	}
 	public class PatientKeys {
 		public final static String SUCCESS = "success";
@@ -124,6 +119,63 @@ public class Record implements Cloneable{
 	public Record() {
 	
 	}
+	public String faxNotes() {
+		if(this.faxNotes==null)
+			return "";
+		else
+			return this.faxNotes;
+	}
+	public void setFaxNotes(String faxNotes) {
+		if(faxNotes==null)
+			this.faxNotes = "";
+		else
+			this.faxNotes = faxNotes;
+	}
+	public int getChaseCount() {
+		return this.chaseCount;
+	}
+	public void setChaseCount(int chaseCount) {
+		this.chaseCount = chaseCount;
+	}
+	public int getConfirmed() {
+		return this.confirmed;
+	}
+	public void setConfirmed(int confirmed) {
+		this.confirmed = confirmed;
+	}
+	public int getReceived() {
+		return this.received;
+	}
+	public void setReceived(int received) {
+		this.received = received;
+	}
+	public String getReceivedDate() {
+		if(this.receivedDate==null)
+			return "0000-00-00";
+		else if(this.receivedDate.equalsIgnoreCase(""))
+			return "0000-00-00";
+		else 
+			return this.receivedDate;
+	}
+	public void setReceivedDate(String receivedDate) {
+		if(receivedDate==null)
+			this.receivedDate = "0000-00-00";
+		else
+			this.receivedDate = receivedDate;
+	}
+	public String getNotes() {
+		if(this.notes==null)
+			return "";
+		else
+			return notes;
+	}
+
+	public void setNotes(String notes) {
+		if(notes==null)
+			this.notes = "";
+		else 
+			this.notes = notes;
+	}
 	public String getTag() {
 		if(this.tag==null)
 			return "";
@@ -143,12 +195,47 @@ public class Record implements Cloneable{
 		else 
 			return braceList;
 	}
-
-
+	public void setProducts(String products) {
+		if(products==null)
+			this.products = new String[] {"Pain"};
+		else 
+			this.products = products.split(",");
+	}
+	public String[] getProducts() {
+		if(this.products==null)
+			return new String[] {"Pain"};
+		else
+			return products;
+	}
+	public String getProductsAsString() {
+		StringBuilder sb = new StringBuilder();
+		if(products==null)
+			return "Pain";
+		else {
+			for(int i = 0;i<products.length;i++) {
+				if(i==products.length-1)
+					sb.append(products[i]);
+				else 
+					sb.append(products[i]+",");
+			}
+			return sb.toString();
+		}
+	}
 	public void setBraceList(String braceList) {
 		this.braceList = braceList;
 	}	
-
+	public void setBraceList(ArrayList<String> braces) {
+		StringBuilder brace = new StringBuilder();
+		for(int i = 0;i<braces.size();i++) {
+			String b = braces.get(i);
+			if(i==braces.size()-1)
+				brace.append(b);
+			else
+				brace.append(b+",");
+		}
+		this.braceList = brace.toString();
+	}	
+	
 	public String getPlanType() {
 		if(this.planType==null)
 			return "";
@@ -180,6 +267,17 @@ public class Record implements Cloneable{
 		setPcn(obj.getString(NDCVerifyClient.JSON.PCN));
 		setGrp(obj.getString(NDCVerifyClient.JSON.GRP));
 		setCarrier(getPBMFromBin(obj.getString(NDCVerifyClient.JSON.BIN)));
+	}
+	public int getCurrentAge() {
+		if(this.dob.equalsIgnoreCase("") || this.dob.equalsIgnoreCase("01/01/1900"))
+			return 0;
+		else  {
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+			LocalDate birthDate = LocalDate.parse(this.dob,formatter);
+			LocalDate currentDate = LocalDate.now();
+			return Period.between(birthDate, currentDate).getYears();
+		}
+			
 	}
 	public void setAge(int age) {
 		this.age = age;

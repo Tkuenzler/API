@@ -17,6 +17,7 @@ import javax.ws.rs.core.MediaType;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import DoctorChase.FaxStatus;
 import client.AgentReport;
 import client.DatabaseClient;
 import client.InfoDatabase;
@@ -616,7 +617,7 @@ public class Report {
 		    agent.setTelmed(client.GetSuccesfulTelmedByAgent(agent.getName(), telmedTimeFrame));
 		    agent.setPendingTelmed(client.GetPendingTelmedByAgent(agent.getName(), telmedTimeFrame));
 		    agent.setFailedTelmed(client.GetFailedTelmedByAgent(agent.getName(), telmedTimeFrame));
-		    agent.setWrongDoctor(client.GetLeadsByFaxDisposition(agent.getName(), leadsTimeFrame, Fax.FaxStatus.WRONG_DOCTOR));
+		    agent.setWrongDoctor(client.GetLeadsByFaxDisposition(agent.getName(), leadsTimeFrame, FaxStatus.WRONG_DOCTOR));
 		    agent.setDMETelmed(client.GetDMETelmedByAgent(agent.getName(), telmedTimeFrame));
 		}
 		int totalLeads = client.GetLeadsByCountByCallCenter(call_center, leadsTimeFrame);
