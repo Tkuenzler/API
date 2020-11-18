@@ -1,5 +1,7 @@
 package WorkFlow;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -17,8 +19,11 @@ import javax.ws.rs.core.MediaType;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import Database.Columns.LeadColumns;
+import Database.Tables.Tables;
 import DoctorChase.FaxStatus;
 import client.AgentReport;
+import client.Database;
 import client.DatabaseClient;
 import client.InfoDatabase;
 import client.PivotTable;
@@ -28,7 +33,42 @@ import client.RoadMapClient;
 @Path("Report")
 public class Report {
 	NumberFormat df = NumberFormat.getPercentInstance();
-		
+	
+	@Path("GetReceivedFaxDisposition")
+	@GET()
+	@Produces(MediaType.TEXT_HTML)
+	public String GetRecievedFaxDisposition(@QueryParam("database") String database,
+			@QueryParam("to") String to,
+			@QueryParam("from") String from) {
+		Database client = new Database(database);
+		try {
+			if(!client.login())
+				return "FAILED TO LOGIN";
+			StringBuilder sb = new StringBuilder();
+			sb.append("<table border='1'>");
+			sb.append("<tr bgcolor='#d3d3d3'>");
+			sb.append("<td>Date</td>");
+			sb.append("<td>Name</td>");
+			sb.append("<td>Number</td>");
+			sb.append("<td>Disposition</td>");
+			sb.append("</tr>");
+			ResultSet set = client.select(Tables.LEADS, null, LeadColumns.RECEIVED_DATE+" >= ? AND "+LeadColumns.RECEIVED_DATE+" <= ? AND "+LeadColumns.FAX_DISPOSITION+" <> ?", new String[] {from,to,FaxStatus.BLANK});
+			while(set.next()) {
+				sb.append("<tr>");
+				sb.append("<td>"+set.getString(LeadColumns.RECEIVED_DATE)+"</td>");
+				sb.append("<td>"+set.getString(LeadColumns.FIRST_NAME)+" "+set.getString(LeadColumns.LAST_NAME)+"</td>");
+				sb.append("<td>"+set.getString(LeadColumns.PHONE_NUMBER)+"</td>");
+				sb.append("<td>"+set.getString(LeadColumns.FAX_DISPOSITION)+"</td>");
+				sb.append("</tr>");
+			}
+			sb.append("</table>");
+			return sb.toString();
+		} catch(SQLException ex) {
+			return ex.getMessage();
+		}
+	}
+	
+	
 	@Path("GetRequalifys")
 	@GET()
 	@Produces(MediaType.TEXT_HTML)
@@ -39,6 +79,8 @@ public class Report {
 		client.close();
 		return response;
 	}
+	
+	
 	@Path("GetChasePercent")
 	@GET()
 	@Produces(MediaType.TEXT_HTML)

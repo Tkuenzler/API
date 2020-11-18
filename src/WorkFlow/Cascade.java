@@ -39,8 +39,40 @@ public class Cascade {
 	
 	
 	@GET
+	@Path("DisplayInsurance")
+	@Produces(MediaType.TEXT_HTML)
+	public String DisplayInsurance(
+			@Context HttpServletRequest request,
+			@QueryParam("first_name") String first_name,
+			@QueryParam("last_name") String last_name,
+			@QueryParam("dob") String dob,
+			@QueryParam("zip") String zip,
+			@QueryParam("gender") String gender,
+			@QueryParam("ssn") String ssn) {
+		Record record = new Record();
+		record.setFirstName(first_name);
+		record.setLastName(last_name);
+		record.setDob(dob);
+		record.setZip(zip);
+		record.setGender(gender);
+		record.setSsn(ssn);
+		EmdeonClient client = new EmdeonClient();
+		client.login("rxcg", "pharmacy123", "1619320132");
+		client.fillOutForm(record);
+		if(client!=null)
+			client.close();
+		StringBuilder sb = new StringBuilder();
+		sb.append("<h2>Status: "+record.getStatus()+"</h3>");
+		sb.append("<h3>Carrier: "+record.getCarrier()+"</h3>");
+		sb.append("<h3>Policy Id: "+record.getPolicyId()+"</h3>");
+		sb.append("<h3>Bin: "+record.getBin()+"</h3>");
+		sb.append("<h3>Group: "+record.getGrp()+"</h3>");
+		sb.append("<h3>Pcn: "+record.getPcn()+"</h3>");
+		return sb.toString();
+	}
+	
+	@GET
 	@Path("Emdeon")
-	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	@Produces(MediaType.APPLICATION_JSON)
 	public String EmdeonLookup(
 			@Context HttpServletRequest request,
@@ -81,9 +113,6 @@ public class Cascade {
 			callCenter = "SOS";
 		RoadMapClient client = new RoadMapClient(roadmap);
 		try {
-			ArrayList<PharmacyMap> map = client.getPharmaciesForTelmed(insurance_type);
-			//if(!Pharmacy.CanTelmed(map,record,insurance_type))
-				//return InsuranceResponse.BuildFailedResponse("CAN'T TAKE "+insurance_type+" IN "+record.getState()).toString();
 			getInsuranceInformation(info,record,callCenter,insurance_type);
 			String type = InsuranceFilter.Filter(record);
 			record.setType(type);
@@ -95,7 +124,7 @@ public class Cascade {
 				return InsuranceResponse.BuildFailedResponse("Patient insurance "+record.getStatus()).toString();
 			}
 			info.close();
-			String pharmacy = Pharmacy.GetTelmedPharmacy(record,insurance_type,roadmap);
+			String pharmacy = Pharmacy.GetTelmedPharmacy(client,record,insurance_type,roadmap);
 			record.setPharmacy(pharmacy);
 			if(pharmacy==null)
 				return InsuranceResponse.BuildFailedResponse("Patient insurance "+record.getStatus()).toString();
@@ -248,45 +277,26 @@ public class Cascade {
  	}
  	private boolean checkState(String state) {
 		switch(state) {
-			case "AL":
-			case "AZ":
-			case "CA":
-			case "CO":
-			case "CT":
-			case "DC":
+			case "TX":
 			case "FL":
 			case "GA":
-			case "IA":
-			case "ID":
-			case "IL":
+			case "NY":
+			case "CA":
 			case "IN":
-			case "KS":
 			case "KY":
 			case "LA":
-			case "MA":
-			case "MD":
-			case "ME":
-			case "MI":
 			case "MN":
-			case "NC":
-			case "ND":
-			case "NE":
-			case "NH":
-			case "NJ":
-			case "NM":
-			case "NV":
-			case "NY":
-			case "OH":
-			case "OK":
+			case "IL":
+			case "MA":
 			case "PA":
-			case "RI":
-			case "SC":
-			case "TN":
-			case "TX":
-			case "UT":
-			case "VA":
 			case "WA":
 			case "WI":
+			case "MO":
+			case "MT":
+			case "NJ":
+			case "NM":
+			case "TN":
+			case "VA":
 				return true;
 			default:
 				return false;

@@ -16,21 +16,6 @@ public class ApplicationConfig extends ResourceConfig {
 	    register(WorkFlow.Telmed.class);
 	    register(WorkFlow.AddRecord.class);
 	    register(WorkFlow.Report.class);
-	    register(WorkFlow.DME.class);
 	    register(WorkFlow.Chase.class);
     }
-	/*
-	 * public Set<Class<?>> getClasses() {
-        Set<Class<?>> s = new HashSet<Class<?>>();
-        s.add(WorkFlow.Cascade.class);
-        s.add(WorkFlow.Verify.class);
-        s.add(WorkFlow.DoctorChase.class);
-        s.add(WorkFlow.RDSTelmed.class);
-        s.add(WorkFlow.InsuranceCheck.class);
-        s.add(WorkFlow.Medcore.class);
-        s.add(WorkFlow.Telmed.class);
-        s.add(WorkFlow.DuplicateCheck.class);
-        s.add(WorkFlow.AddRecord.class);
-        return s;
-        */
 }

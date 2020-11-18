@@ -1,0 +1,14 @@
+Hi my name is [YOUR NAME] from Prescription Experts I am calling on behalf of a mutual of ours <PATIENT NAME> with a date of birth <DOB>. </br>
+We had faxed over a prescription request for <PATIENT NAME> on <RECEIVED DATE>.  We have yet to hear back we just wanted to follow up.  </br>
+</br>
+</br>
+Is there anything we can do on our end to help speed this along so we can get back to the patient? (TAKE NOTES) </br>
+Do you need me to re-fax the prescription?  </br>
+</br>
+[IF YES] </br>
+Ok and I will fax it to this number? <DR FAX NUMBER> </br>
+And who can I make attention out to? </br>
+Ok I will follow back up with you to confirm it has been received. </br>
+</br>
+[IF NO] </br>
+Ok you still have the prescription? </br>

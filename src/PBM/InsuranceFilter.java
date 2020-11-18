@@ -104,7 +104,7 @@ public class InsuranceFilter {
 				insurance =  InsuranceType.MEDICAID;
 				break;
 			case "020107":
-				insurance =  InsuranceType.MEDICARE_COMMERCIAL;
+				insurance =  Caremark.Filter(record);
 				break;
 			case "610239":
 				insurance =  InsuranceType.MEDICARE_COMMERCIAL;

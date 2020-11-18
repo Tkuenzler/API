@@ -1,5 +1,6 @@
 package client;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -18,12 +19,11 @@ import javax.swing.JOptionPane;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import Database.Columns.FaxedColumns;
 import DoctorChase.FaxStatus;
 import DoctorChase.MessageStatus;
 import Fax.TelmedStatus;
 import JSONParameters.TriageParameters;
-import PBM.InsuranceFilter;
-import PBM.InsuranceType;
 import ResponseBuilder.TelmedResponse;
 
 public class DatabaseClient {
@@ -1801,16 +1801,13 @@ public class DatabaseClient {
 			stmt = connect.createStatement();
 			set = stmt.executeQuery(sql);
 			while(set.next()) {
-				String phone = set.getString("phonenumber");
-				String message_id = set.getString("MESSAGE_ID");
-				String status = set.getString("STATUS");
-				String id = set.getString("_id");
-				String record_type = set.getString("RECORD_TYPE");
-				String pharmacy = set.getString("PHARMACY");
-				list.add(new FaxedRecord(id,phone,message_id,status,record_type,pharmacy));
+				list.add(new FaxedRecord(set));
 			}
 			return list;
 		} catch(SQLException ex) {
+			return null;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
 			return null;
 		} finally {
 			try {
@@ -1829,16 +1826,13 @@ public class DatabaseClient {
 			stmt = connect.createStatement();
 			set = stmt.executeQuery(sql);
 			while(set.next()) {
-				String phone = set.getString("phonenumber");
-				String message_id = set.getString("MESSAGE_ID");
-				String status = set.getString("STATUS");
-				String id = set.getString("_id");
-				String record_type = set.getString("RECORD_TYPE");
-				String pharmacy = set.getString("PHARMACY");
-				list.add(new FaxedRecord(id,phone,message_id,status,record_type,pharmacy));
+				list.add(new FaxedRecord(set));
 			}
 			return list;
 		} catch(SQLException ex) {
+			return null;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
 			return null;
 		} finally {
 			try {
@@ -1857,16 +1851,13 @@ public class DatabaseClient {
 			stmt = connect.createStatement();
 			set = stmt.executeQuery(sql);
 			while(set.next()) {
-				String phone = set.getString("phonenumber");
-				String message_id = set.getString("MESSAGE_ID");
-				String status = set.getString("STATUS");
-				String id = set.getString("_id");
-				String record_type = set.getString("RECORD_TYPE");
-				String pharmacy = set.getString("PHARMACY");
-				list.add(new FaxedRecord(id,phone,message_id,status,record_type,pharmacy));
+				list.add(new FaxedRecord(set));
 			}
 			return list;
 		} catch(SQLException ex) {
+			return null;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
 			return null;
 		} finally {
 			try {
@@ -1885,16 +1876,13 @@ public class DatabaseClient {
 			stmt = connect.createStatement();
 			set = stmt.executeQuery(sql);
 			while(set.next()) {
-				String phone = set.getString("phonenumber");
-				String message_id = set.getString("MESSAGE_ID");
-				String status = set.getString("STATUS");
-				String id = set.getString("_id");
-				String record_type = set.getString("RECORD_TYPE");
-				String pharmacy = set.getString("PHARMACY");
-				list.add(new FaxedRecord(id,phone,message_id,status,record_type,pharmacy));
+				list.add(new FaxedRecord(set));
 			}
 			return list;
 		} catch(SQLException ex) {
+			return null;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
 			return null;
 		} finally {
 			try {

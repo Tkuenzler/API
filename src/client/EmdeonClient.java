@@ -201,11 +201,13 @@ public class EmdeonClient {
 					return;
 				}
 				getPrivateCellData(table,record);
+				/*
 				if(record.getSsn().length()==4) {
 					table = (HtmlTable) cardFinderPage.getElementById(ElementIds.MEDICARE_PART_D_TABLE);
 					if(table!=null)
 						getMedicareCellData(table,record);
 				}
+				*/
 			}
 			record.setCarrier(InsuranceFilter.GetPBMFromBin(record));
 		} catch (FailingHttpStatusCodeException e) {

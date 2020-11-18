@@ -736,7 +736,7 @@ public class ReportClient {
 		} 
 	}
 	public int GetSuccesfulTelmedByAgent(String agent,String timeFrame) {
-		String sql = "SELECT COUNT(*) FROM `TELMED` WHERE "+timeFrame+" AND `agent` = '"+agent+"' AND "+TelmedStatus.GetSuccesfulQuery();
+		String sql = "SELECT COUNT(*) FROM `TELMED` WHERE "+timeFrame+" AND `agent` = '"+agent+"' AND ("+TelmedStatus.GetSuccesfulQuery()+" OR (`TELMED_STATUS` = 'Triage Complete' AND `SUBMITTED` = 1))";
 		Statement stmt = null;
 		ResultSet set = null;
 		try {

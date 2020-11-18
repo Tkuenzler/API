@@ -27,25 +27,8 @@ public class Fax {
 		return result;
 	}
 	public static Script GetScript(Record record,String database) throws ScriptException, IOException, URISyntaxException {
-		if(database.equalsIgnoreCase("COMAN_MARKETING"))
-			record.setTag("CM");
 		if(record.getBin()==null)
 			return new Script(Fax.class.getClassLoader().getResource(Script.DR_CHASE_MAX));
-		if(record.getPharmacy().equalsIgnoreCase("All_Pharmacy")) {
-			switch(record.getBin()) {
-				case "015581":
-				case "015599":
-				case "610014":
-				case "003858":
-				case "017010":
-					return new Script(Drug.Diflorasone180);
-				case "610097":
-					return new Script(Drug.Ketoprofen240);
-				default:
-					return new Script(Fax.class.getClassLoader().getResource(Script.DR_CHASE_MAX));
-			}
-			
-		}
 		if(isMedicare(record)) {
 			switch(record.getBin()) {
 				case "004336":
@@ -62,14 +45,17 @@ public class Fax {
 				case "610591":
 					return new Script(Fax.class.getClassLoader().getResource(Script.CAREMARK));
 				case "610239":
-					return new Script(Fax.class.getClassLoader().getResource(Script.DR_CHASE_MAX));
+					return new Script(Fax.class.getClassLoader().getResource(Script.CAREMARK_FEDERAL));
 				case "610502":
 					return new Script(Fax.class.getClassLoader().getResource(Script.AETNA));
 				case "020115":
 					return new Script(Fax.class.getClassLoader().getResource(Script.INGENIO_RX));
 				case "015581":
 				case "015599":
-					return new Script(Fax.class.getClassLoader().getResource(Script.HUMANA));
+					if(record.getPharmacy().equalsIgnoreCase("All_Pharmacy"))
+						return new Script(Fax.class.getClassLoader().getResource(Script.HUMANA_ALL_FAMILY_PHARMACY));
+					else
+						return new Script(Fax.class.getClassLoader().getResource(Script.HUMANA));
 				case "610097":
 					if(record.getGrp().equalsIgnoreCase("SHCA"))
 						return new Script(Fax.class.getClassLoader().getResource(Script.OPTUM_RX_SHCA));
@@ -85,6 +71,8 @@ public class Fax {
 				default: return new Script(Fax.class.getClassLoader().getResource(Script.DR_CHASE_MAX));	
 			}
 		}
+		else if(record.getCarrier().equalsIgnoreCase("Caremark") || record.getCarrier().equalsIgnoreCase("Anthem") || record.getCarrier().equalsIgnoreCase("Aetna"))
+			return new Script(Fax.class.getClassLoader().getResource(Script.CAREMARK));
 		else 
 			return new Script(Fax.class.getClassLoader().getResource(Script.DR_CHASE_MAX));
 	}
@@ -114,12 +102,15 @@ public class Fax {
 				switch(record.getPharmacy()) {
 					case "Sterling":
 						return new RingCentralClient("13252676022","Winston4503","YHkGqwbYRCSrR12MLGGlNg","8FGD3qd_TLS_wIH_AmrOaQOvHnqKegS6K1TH-NEqo3qw");
+					case "Franklington":
+						return new RingCentralClient("16143336236","Kuenzler5726","5D_GKWGNTYKjpeqQxo8-Ww","wjmI17MhTD25GR17MT7QCwcMlZI_mKTWasKFwnfXCllQ");
+					case "Be Well":
+						return new RingCentralClient("18176627717","Kuenzler5726","5D_GKWGNTYKjpeqQxo8-Ww","wjmI17MhTD25GR17MT7QCwcMlZI_mKTWasKFwnfXCllQ");
 					case "Hershey":
 						return new RingCentralClient("19194468308","Kuenzler5726","5D_GKWGNTYKjpeqQxo8-Ww","wjmI17MhTD25GR17MT7QCwcMlZI_mKTWasKFwnfXCllQ");
-					case "Millennium":
-						return new RingCentralClient("16152589641","Winston4503","YHkGqwbYRCSrR12MLGGlNg","8FGD3qd_TLS_wIH_AmrOaQOvHnqKegS6K1TH-NEqo3qw");
 					case "Jewel":
 						return new RingCentralClient("17085713340","Winston4503","YHkGqwbYRCSrR12MLGGlNg","8FGD3qd_TLS_wIH_AmrOaQOvHnqKegS6K1TH-NEqo3qw");
+					case "Golden State Pharmacy":
 					case "Rheem":
 						return new RingCentralClient("19254345024","Winston4503","93y9kwlkSge8rfugvPXTbw","xoKao-qQT1iuGsF6yPk_5gnyR8VYLGT12JtZRwN2-Pzg");
 					case "Fusion":
@@ -128,11 +119,15 @@ public class Fax {
 						return new RingCentralClient("17573514596","Kuenzler5726","CnE3L5LaQkipFr1-Yw88xg","jzL1Kk9jR0ypDfW5JxI6kQsxrMT3p0TEatW5UF3Pbbpw");
 					case "All_Pharmacy":
 						return new RingCentralClient("15612088766","Winston4503","2GLlQwihSBWTtWOjqU7fGg","2pWwHGALTqKjOM3J8CQa-wSmLoqPNBSq-UL1jppP_n3g");
+					case "MT_Medical_Supplies":
+						return new RingCentralClient("15614869163","Winston4503","bnOz5HZfTSeivt2cYYn9hg","Yxcd-HcUSRSv6iSK4_L-bwxQBLxGjyRBGlNLIwMVLnvA");
 					case "MedRx":
 						if(record.getState().equalsIgnoreCase("LA"))
 							return new RingCentralClient("13182556193","Kuenzler5726","ia661QoQRh2Nqr6wD3HdYg","PAXMi-8HSdGgcujvdrVbpwrVZ30H61TcOMVx-kRcysJw");
 						else
 							return new RingCentralClient("18324581961","Kuenzler5726","ia661QoQRh2Nqr6wD3HdYg","PAXMi-8HSdGgcujvdrVbpwrVZ30H61TcOMVx-kRcysJw");
+					case "Carepoint":
+						return new RingCentralClient("18475658285","Winston4503","54-p19O9RnKX2unwHoqzNA","Y-Gc52iUSFyEe9FcO09FUg9jUDofTJTZCe9SsdQXfG1w");
 					default:
 						return new RingCentralClient("15612660791","Winston4503","YHkGqwbYRCSrR12MLGGlNg","8FGD3qd_TLS_wIH_AmrOaQOvHnqKegS6K1TH-NEqo3qw");
 				}		
@@ -150,8 +145,21 @@ public class Fax {
 	public static ScriptNew GetScriptNew(Record record,String login) throws InvalidPasswordException, IOException, URISyntaxException {
 		if(record.getBin().equalsIgnoreCase(""))
 			return new ScriptNew(record,Fax.class.getClassLoader().getResource(Script.DR_CHASE_MAX),login);
-		if(record.getPharmacy().equalsIgnoreCase("All_Pharmacy")) 
-			return new ScriptNew(record,Fax.class.getClassLoader().getResource(Script.CUSTOM_SCRIPT_WITH_COVER),login);
+		if(record.getPharmacy().equalsIgnoreCase("MedRx")) {
+			switch(record.getCarrier()) {
+				case "Anthem":
+				case "SilverScripts/Wellcare":
+					return new ScriptNew(record,Fax.class.getClassLoader().getResource(Script.CAREMARK_MED_RX_CLOBETASOL),login);
+				case "Aetna":
+					return new ScriptNew(record,Fax.class.getClassLoader().getResource(Script.CAREMARK_MED_RX_DIFLORASONE),login);
+				case "Caremark":
+					if(record.getPcn().equalsIgnoreCase("ADV"))
+						return new ScriptNew(record,Fax.class.getClassLoader().getResource(Script.CAREMARK_MED_RX_DIFLORASONE),login);
+					else
+						return new ScriptNew(record,Fax.class.getClassLoader().getResource(Script.CAREMARK_MED_RX_CLOBETASOL),login);
+					
+			}
+		}
 		if(isMedicare(record)) {
 			switch(record.getBin()) {
 				case "004336":
@@ -175,7 +183,10 @@ public class Fax {
 					return new ScriptNew(record,Fax.class.getClassLoader().getResource(Script.INGENIO_RX),login);
 				case "015581":
 				case "015599":
-					return new ScriptNew(record,Fax.class.getClassLoader().getResource(Script.HUMANA),login);
+					if(record.getPharmacy().equalsIgnoreCase("All_Pharmacy"))
+						return new ScriptNew(record,Fax.class.getClassLoader().getResource(Script.HUMANA_ALL_FAMILY_PHARMACY),login);
+					else
+						return new ScriptNew(record,Fax.class.getClassLoader().getResource(Script.HUMANA),login);
 				case "610097":
 					if(record.getGrp().equalsIgnoreCase("SHCA"))
 						return new ScriptNew(record,Fax.class.getClassLoader().getResource(Script.OPTUM_RX_SHCA),login);

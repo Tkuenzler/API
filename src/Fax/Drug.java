@@ -32,8 +32,10 @@ public enum Drug {
 		Triamcinolone("Triamcinolone Acetonide 0.147 mg/gm Topical Aerosol","400 Grams","Apply 2-3 sprays to affected area(s) 3-4 times daily (2 second spray = 1 gram)","INFLAMMATION MANAGEMENT: STEROID",new String[] {"71800015631"}),
 		CalcipotreneBetaMethasoone("Calciporene BetaMethasone","","","INFLAMMATION MANAGEMENT: STEROID",new String[] {"00781716535"}),
 		//Psoriasis
-		Calcipotrene360("Calcipotriene 0.005% Topical Cream","360 Grams","Apply 2-3 gm to affected area 3-4 times daily as directed.","PSORIASIS",new String[] {"00781711783","16714076302","68462050166"}),
-		Calcipotrene240("Calcipotriene 0.005% Topical Cream","240 Grams","Apply 2-3 gm to affected area 2-3 times daily as directed.","PSORIASIS",new String[] {"00781711783","16714076302","68462050166"}),
+		CalcipotrieneOintment("Calcipotriene 0.005% Topical Ointment","360 Grams","Apply 2-3 gm to affected area 3-4 times daily as directed.","PSORIASIS",new String[] {""}),
+		CalcipotrieneFoam("Calcipotriene 0.005% Foam","360 Granms","Apply 2-3 gm to affected area 3-4 times daily as directed.","PSORIASIS",new String[] {}),
+		Calcipotriene360("Calcipotriene 0.005% Topical Cream","360 Grams","Apply 2-3 gm to affected area 3-4 times daily as directed.","PSORIASIS",new String[] {"00781711783","16714076302","68462050166"}),
+		Calcipotriene240("Calcipotriene 0.005% Topical Cream","240 Grams","Apply 2-3 gm to affected area 2-3 times daily as directed.","PSORIASIS",new String[] {"00781711783","16714076302","68462050166"}),
 		//SCAR
 		SilKPad("Sil-K Pad","4 Patches","Cut pad to fit scar with 1/4 inch beyond the scar on all sides. Apply patch and leave on for 8-12 hours per day then remove (Discard the pad and replace with a new one every 7 days)","SCAR",new String[] {"70350261501"}),
 		//NSAID
@@ -82,8 +84,9 @@ public enum Drug {
 		Xvite("Xvite Tablet","60 Tablets","Take one table by mouth twice daily.","DIETARY SUPPLEMENT",new String[] {"69067004030"}),
 		OmegaEthylEster("Omega-3 Acid Ethyl Esters","360 Capsules","Take one capsule four times a day.","DIETARY SUPPLEMENT (90 Day Supply)",new String[] {"6050531707"}),
 		//Cleaning
-		AlcoholPad("Alcohol Pad","300"," Cleanse the skin by using 1 sterile pad on the affected area directly before applying any topical Cream / Gel / Solution","CLEANING",new String[] {"42423027101","47781015301","91237000128"});
-		
+		AlcoholPad("Alcohol Pad","300"," Cleanse the skin by using 1 sterile pad on the affected area directly before applying any topical Cream / Gel / Solution","CLEANING",new String[] {"42423027101","47781015301","91237000128"}),
+		//Acif Reflux
+		Omeprazole("Omeprazole and Sodium Bicarbonate Capsules 40/1100 mg","30 Capsules","Take 1 capsule daily, 1 hour before breakfast","ACID REFLUX/GERD",new String[] {});
 	String name,qty,sig,therapy;
 	String[] ndc;
 	Drug(String name,String qty, String sig,String therapy,String[] ndc) {
@@ -306,6 +309,37 @@ public enum Drug {
 				return  Naftifine;
 			default:
 				return Econazole;
+		}
+	}
+	public static Drug GetDermatitis(Record record) {
+		int type = InsuranceFilter.GetInsuranceType(record);
+		switch(record.getBin()) {
+			case "610279":
+				return CalcipotrieneFoam;
+			case "003858":
+			case "610014":
+				if(type==InsuranceType.Type.PRIVATE_INSURANCE)
+					return CalcipotrieneFoam;
+				else
+					return Calcipotriene360;
+			case "004336":
+			case "020015":
+			case "610502":
+			case "610591":
+				return CalcipotrieneOintment;
+			case "015581":
+			case "015599":
+			case "610649":
+				return Calcipotriene360;
+			case "610097":
+			case "610494":
+			case "610011":
+			case "017010":
+				return Calcipotriene360;
+			case "400023":
+				return  Calcipotriene360; 
+			default:
+				return Calcipotriene360;
 		}
 	}
 }

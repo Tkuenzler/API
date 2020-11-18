@@ -14,6 +14,11 @@ public class Caremark {
 			}
 		}
 		switch(record.getPcn()) {
+			case "CH":
+				if(record.getBin().equalsIgnoreCase("020107"))
+					return InsuranceType.MEDICAID;
+				else 
+					return InsuranceType.MEDICARE_COMMERCIAL;
 			case "WG":
 				return InsuranceType.PRIVATE_NO_TELMED;
 			case "ADV":

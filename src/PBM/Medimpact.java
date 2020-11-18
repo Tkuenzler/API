@@ -23,7 +23,7 @@ public class Medimpact {
 			case "10016720":
 			case "CCA01":
 			case "KAISER":
-			
+			case "CAT04":
 				return InsuranceType.MEDICAID;
 			case "10008217":
 				return InsuranceType.PRIVATE_UNKNOWN;

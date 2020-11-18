@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import Database.Columns.DMEColumns;
 import Database.Columns.LeadColumns;
 import PBM.InsuranceFilter;
 import PBM.InsuranceType;
@@ -19,7 +20,7 @@ public class Record implements Cloneable{
 	public String record_type;
 	String firstName,lastName,dob,ssn,gender,email;
 	String address,city,state,zip,phone;
-	String agent,pharmacy,source,tag;
+	String agent,pharmacy,source,tag,afid,call_notes;
 	int telmedId;
 	String insuranceName,planType,carrier,id,policyId,bin,grp,pcn,additionalInfo;
 	String insuranceType,status,type,emdeon_type;
@@ -84,6 +85,43 @@ public class Record implements Cloneable{
 			e.printStackTrace();
 		}
 	}
+	public Record(ResultSet result,boolean dme) {
+		try {
+			setFirstName(toProperCase(result.getString(DMEColumns.FIRST_NAME)));
+			setLastName(toProperCase(result.getString(DMEColumns.LAST_NAME)));
+			setPhone(result.getString(DMEColumns.PHONE).replaceAll("[()\\s-]+", ""));
+			setId(result.getString(DMEColumns.ID));
+			setDob(result.getString(DMEColumns.DOB));
+			setSsn(result.getString(DMEColumns.SSN));
+			setGender(result.getString(DMEColumns.GENDER));
+			setAddress(toProperCase(result.getString(DMEColumns.ADDRESS)));
+			setCity(toProperCase(result.getString(DMEColumns.CITY)));
+			setState(result.getString(DMEColumns.STATE).toUpperCase());
+			setZip(result.getString(DMEColumns.ZIP));
+			setCarrier(result.getString(DMEColumns.CARRIER));
+			setPolicyId(result.getString(DMEColumns.POLICY_ID));	
+			setNpi(result.getString(DMEColumns.NPI));
+			setDrType(result.getString(DMEColumns.DR_TYPE));
+			setDrFirst(toProperCase(result.getString(DMEColumns.DR_FIRST)));
+			setDrLast(toProperCase(result.getString(DMEColumns.DR_LAST)));
+			setDrAddress(toProperCase(result.getString(DMEColumns.DR_ADDRESS)));
+			setDrCity(toProperCase(result.getString(DMEColumns.DR_CITY).replaceAll("\"'","")));
+			setDrState(result.getString(DMEColumns.DR_STATE).replaceAll("\"'","").toUpperCase());
+			setDrZip(result.getString(DMEColumns.DR_ZIP).replaceAll("\"'",""));
+			setDrPhone(result.getString(DMEColumns.DR_PHONE).replaceAll("[()\\-\\s]", ""));
+			setDrFax(result.getString(DMEColumns.DR_FAX));		
+			setFaxDisposition(result.getString(DMEColumns.FAX_DISPOSITION));
+			setDoctorConfirmed(result.getInt(DMEColumns.CONFIRM_DOCTOR) == 1 ? true : false);
+			setNotes(result.getString(DMEColumns.NOTES));
+			setReceived(result.getInt(DMEColumns.RECEIVED));
+			setConfirmed(result.getInt(DMEColumns.CONFIRM_DOCTOR));
+			setChaseCount(result.getInt(DMEColumns.CHASE_COUNT));
+			setBraceList(result.getString(DMEColumns.BRACES));
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	public class PatientKeys {
 		public final static String SUCCESS = "success";
 		public final static String RECORD_TYPE = "Record_Type";
@@ -118,6 +156,30 @@ public class Record implements Cloneable{
 	}
 	public Record() {
 	
+	}
+	public String getCallNotes() {
+		if(this.call_notes==null)
+			return "";
+		else
+			return call_notes;
+	}
+	public void setCallNotes(String call_notes) {
+		if(call_notes==null)
+			this.call_notes = "";
+		else
+			this.call_notes = call_notes;
+	}
+	public String getAfid() {
+		if(this.afid==null)
+			return "";
+		else
+			return afid;
+	}
+	public void setAfid(String afid) {
+		if(afid==null)
+			this.afid = "";
+		else
+			this.afid = afid;
 	}
 	public String faxNotes() {
 		if(this.faxNotes==null)

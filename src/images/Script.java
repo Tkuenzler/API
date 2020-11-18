@@ -28,8 +28,13 @@ public class Script {
 	public static final String LIVE_SCRIPT = "images/Live Script.pdf";
 	public static final String DR_CHASE_MIN = "images/DR_CHASE - MIN.pdf";
 	public static final String DR_CHASE_MAX = "images/DR_CHASE - MAX.pdf";
+	public static final String DME = "images/DME.pdf";
 	public static final String HUMANA = "images/Humana.pdf";
+	public static final String HUMANA_ALL_FAMILY_PHARMACY = "images/Humana - All Family Pharmacy.pdf";
 	public static final String CAREMARK = "images/Caremark.pdf";
+	public static final String CAREMARK_FEDERAL = "images/Caremark Federal.pdf";
+	public static final String CAREMARK_MED_RX_DIFLORASONE = "images/Caremark - MedRx - Diflorasone.pdf";
+	public static final String CAREMARK_MED_RX_CLOBETASOL = "images/Caremark - MedRx - Clobetasol.pdf";
 	public static final String SILVER_SCRIPTS = "images/Silverscripts.pdf";
 	public static final String RX_8120 = "images/RX8120.pdf";
 	public static final String RX_6270 = "images/RX6270.pdf";
@@ -86,9 +91,6 @@ public class Script {
 			file = File.createTempFile("FAX", ".pdf");
 			pdfDocument.save(file);
 			AddScripts(record,number);
-			if(record.getPharmacy().equalsIgnoreCase("All_Pharmacy")) {
-				AddScriptsAllFamilyPharmacy(record,number);
-			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -108,19 +110,25 @@ public class Script {
 		for(String product: record.getProducts()) {
 			switch(product.trim()) {
 				case "Migraines":
-					AddScript(record, number, Drug.GetMigraineScript(record), null);
+					AddScript(record, number, Drug.GetMigraineScript(record), null,"Patient suffers from Migraines");
 					break;
 				case "Anti-Fungal":
 					if(!fungal) {
-						AddScript(record, number, Drug.GetAntiFungal(record), null);
+						AddScript(record, number, Drug.GetAntiFungal(record), null,"Patient suffers from skin infections or flaky skin");
 						fungal = true;
 					}
 					break;
 				case "Podiatry":
 					if(!fungal) {
-						AddScript(record, number, Drug.GetFootSoak(record), Drug.GetAntiFungal(record));
+						AddScript(record, number, Drug.GetFootSoak(record), Drug.GetAntiFungal(record),"Patient suffers from foot fungus or infections on the feet");
 						fungal = true;
 					}
+					break;
+				case "Acid Reflux":
+					AddScript(record, number, Drug.Omeprazole, null, "Patient suffers from chronic Acid Reflux or Gerd");
+					break;
+				case "Dermatitis":
+					AddScript(record, number, Drug.GetDermatitis(record),null, "Patient suffers from Psoriasis, Eczema, Dermatitis or Dry/Irritated skin.");
 					break;
 			}
 		}
@@ -208,18 +216,6 @@ public class Script {
 				case "Doctor Address":
 					acroForm.getField("Doctor Address").setValue(record.getDrAddress().toUpperCase());
 					break;
-				case "Drug Therapy 1":
-					acroForm.getField(field.getPartialName()).setValue(drug.getTherapy()); 
-					break;
-				case "Drug 1": 
-					acroForm.getField(field.getPartialName()).setValue("Medication: "+drug.getName()); 
-					break;
-				case "Drug Qty 1":
-					acroForm.getField(field.getPartialName()).setValue("Dispense: "+drug.getQty()); 
-					break;
-				case "Drug Sig 1":
-					acroForm.getField(field.getPartialName()).setValue("Sig:  "+drug.getSig()); 
-					break;
 			}
 		}
 		PDCheckBox pain = (PDCheckBox) acroForm.getField("Pain");
@@ -273,7 +269,7 @@ public class Script {
 			}
 		}
 	}
-	public void AddScript(Record record,String login,Drug drug1,Drug drug2) throws InvalidPasswordException, IOException, ScriptException, URISyntaxException {
+	public void AddScript(Record record,String login,Drug drug1,Drug drug2,String notes) throws InvalidPasswordException, IOException, ScriptException, URISyntaxException {
 		pdfMerger = new PDFMergerUtility();
 		pdfDocument = PDDocument.load(new File(Script.class.getClassLoader().getResource(Script.CUSTOM_SCRIPT).toURI()));
 		docCatalog = pdfDocument.getDocumentCatalog();
@@ -281,7 +277,6 @@ public class Script {
 		try {
 			//COVER PAGE
 			List<PDField> fields = acroForm.getFields();
-			PopulateScript(fields,record,login);
 			PopulateScript(fields,record,login);
 			if(drug1!=null || drug2!=null)
 				PopulateDrugs(fields,drug1,drug2);
@@ -301,59 +296,6 @@ public class Script {
 			throw new ScriptException("Illegal Argument");
 		}  finally {
 			
-		}
-	}
-	public void AddScriptsAllFamilyPharmacy(Record record,String number) throws InvalidPasswordException, IOException, ScriptException, URISyntaxException {
-		int type = InsuranceFilter.GetInsuranceType(record);
-		switch(record.getBin()) {
-			case "015581":
-			case "015589":
-			{
-				AddScript(record,number,Drug.LidoPrilo240,null);
-				if(record.getCurrentAge()>=60)
-					AddScript(record,number,Drug.Methocarbamol750,null);
-				else
-					AddScript(record,number,Drug.Cyclobenzaprine5mg,null);
-				AddScript(record,number,Drug.OmegaEthylEster, null);
-				break;
-			}
-			case "610014":
-			case "003858":
-			{
-				if(type==InsuranceType.Type.PRIVATE_INSURANCE) {
-					AddScript(record,number,Drug.Ketoprofen240,null);
-					AddScript(record,number,Drug.Chlorzoxazone250,null);
-					AddScript(record,number,Drug.Lidocaine250,null);
-					break;
-				} 
-				else {
-					AddScript(record,number,Drug.Ketoprofen180,null);
-					AddScript(record,number,Drug.Chlorzoxazone250,null);
-					AddScript(record,number,Drug.Lidocaine250,null);
-					break;
-				}
-			}
-			case "017010":
-			{
-				if(type==InsuranceType.Type.PRIVATE_INSURANCE) {
-					AddScript(record,number,Drug.Fenoprofen400,null);
-					AddScript(record,number,Drug.Chlorzoxazone250,null);
-					AddScript(record,number,Drug.Cyclobenzaprine7_5mg,null);
-					break;
-				}
-				else {
-					AddScript(record,number,Drug.Naproxen375, null);
-					AddScript(record,number,Drug.OmegaEthylEster, null);
-					break;
-				}
-			}
-			case "610097":
-			{
-				AddScript(record,number,Drug.Clobetasol180,null);
-				AddScript(record,number,Drug.OmegaEthylEster, null);
-			}
-			default:
-				break;
 		}
 	}
 	public void close() {

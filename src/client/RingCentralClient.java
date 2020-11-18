@@ -63,6 +63,7 @@ public class RingCentralClient {
 	private String REFRESH_TOKEN;
 	public String number,password;
 	private String CLIENT,SECRET;
+	public boolean loggedIn = false;
 	public RingCentralClient(String number,String password,String client, String secret) {
 		this.number = number;
 		this.password = password;
@@ -92,6 +93,7 @@ public class RingCentralClient {
 		    LogResponse(URLS.AUTHORIZE,response.getStatusLine().getStatusCode());
 		    client.close();
 		    response.close();
+		    loggedIn = status;
 		    return status;
 		} catch (UnsupportedEncodingException e) {
 			// TODO Auto-generated catch block

@@ -48,6 +48,7 @@ public class RoadMapClient {
 		String sql = null;
 		switch(type) {
 			case "Medicare":
+			case "Medicaid":
 			case InsuranceType.MEDICARE_TELMED:
 				sql = "SELECT * FROM `"+table+"` WHERE `MEDICARE_TELMED` = 1 OR `COMMERCIAL_TELMED` = 1";
 				break;
@@ -94,6 +95,8 @@ public class RoadMapClient {
 			sb.append("(");
 			while(set.next()) {
 				String pharmacy = set.getString("PHARMACY");
+				if(pharmacy.equalsIgnoreCase("All_Pharmacy"))
+					continue;
 				sb.append("`PHARMACY` = '"+pharmacy+"'");
 				if(!set.isLast())
 					sb.append(" OR ");

@@ -1,0 +1,10 @@
+Hi my name is [YOUR NAME] from Prescription Experts I am calling on behalf of a mutual of ours <PATIENT NAME> with a date of birth <DOB>. </br>
+I just faxed over a prescription request for <PATIENT NAME>.  I just want to verify that you have received it. </br>
+</br>
+[IF THEY HAVE PRESCRIPTION] </br>
+Ok thank you so much for your help.  If you can just have the doctor fill that out and send it back at their earliest convenience we would greatly appreciate it </br>
+</br>
+[IF THEY DO NOT HAVE PRESCRIPTION]
+Ok what I will do is re fax the prescription back to you. </br>
+Is the correct fax number still <DR FAX NUMBER> ? </br>
+Ok thank you for your help.  I will fax this and follow back up once it has been received.

@@ -1,0 +1,15 @@
+Hi my name is [YOUR NAME] from Prescription Experts I am calling on behalf of a mutual of ours <PATIENT NAME> with a date of birth <DOB>. </br>
+We are trying to fax over a prescription request from the patient. We just want to make sure we have the correct office.  </br>
+</br>
+</br>
+Is this the office of <DR NAME>? </br>
+[IF YES CHECK CONFIRM DOCTOR BOX] </br>
+	Ok and is this address correct: <DR ADDRESS> </br>
+	And what is correct fax number: <DR FAX NUMBER> </br>
+	Ok and who can I make this attention to so we can verify its been received?
+	</br>
+	Thank you for your help, I will go ahead and fax the prescription request and then I will follow up once the prescription has been sent.</br>
+[IF NO] </br> 
+	Do you happen to have the phone number of the doctors current office? (IF SO GET UPDATE DR OFFICE NUMBER AND CALL THAT NUMBER). </br>
+	</br>
+	Thank you for your help.
